@@ -1,6 +1,5 @@
 export const dynamic = 'force-dynamic';
 
-
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
@@ -13,18 +12,31 @@ export const metadata = {
 export default async function VehiclesPage() {
   const { userId, sessionClaims } = await auth();
 
-  // Protección estricta de ruta (Solo rol 'driver')
+  // Protección estricta de ruta (Solo usuarios con rol 'driver')
   if (!userId || sessionClaims?.role !== "driver") {
     redirect("/");
   }
 
-  // Traemos el conductor y sus vehículos usando Clerk ID
-  const driver = await prisma.driver.findUnique({
+  // 🚀 AUTO-REGISTRO EN PRIMER LOGIN (Exigido por la especificación de Usuarios Compartidos)
+  const driver = await prisma.driver.upsert({
     where: { clerk_user_id: userId },
-    include: { vehicles: true }
+    update: {}, // Si el perfil ya existe en Neon, no altera ningún dato operativo
+    create: {
+      clerk_user_id: userId,
+      full_name: (sessionClaims as any).name || "Conductor Nuevo",
+      phone: "",
+      status: "ACTIVE",
+      verification_status: "PENDING", // Nace pendiente para ser aprobado desde el dashboard de Admin
+    },
+    include: { 
+      vehicles: { 
+        where: { status: "ACTIVE" } // Filtramos solo los vehículos activos para mantener consistencia
+      } 
+    }
   });
 
-  const vehicles = driver?.vehicles || [];
+  // Al usar upsert, garantizamos que 'driver' nunca es null y 'vehicles' siempre es un array seguro
+  const vehicles = driver.vehicles;
 
   return (
     <div className="max-w-5xl mx-auto py-10 px-4 sm:px-6 lg:px-8 space-y-10 bg-gray-50 min-h-screen">
@@ -46,7 +58,9 @@ export default async function VehiclesPage() {
         </div>
         <div className="border-t border-gray-200">
           <ul role="list" className="divide-y divide-gray-200">
-            {vehicles.length === 0 && <li className="px-4 py-6 text-center text-sm text-gray-500 italic">No tienes vehículos registrados.</li>}
+            {vehicles.length === 0 && (
+              <li className="px-4 py-6 text-center text-sm text-gray-500 italic">No tienes vehículos registrados.</li>
+            )}
             {vehicles.map((v) => (
               <li key={v.id} className="px-4 py-4 sm:px-6 flex justify-between items-center hover:bg-gray-50">
                 <div>

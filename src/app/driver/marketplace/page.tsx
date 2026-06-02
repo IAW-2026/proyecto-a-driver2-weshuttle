@@ -31,31 +31,37 @@ export default async function MarketplacePage({
 
   const skip = (validPage - 1) * pageSize;
 
-  // 1. Recuperamos la sesión del conductor autenticado en Clerk
-  const { userId } = await auth();
+  // 1. Recuperamos la sesión y los claims del usuario logueado en Clerk
+  const { userId, sessionClaims } = await auth();
   
-  // 2. Buscamos el perfil del conductor local y sus vehículos
-  const currentDriver = userId 
-    ? await prisma.driver.findUnique({
-        where: { clerk_user_id: userId },
-        include: { vehicles: { where: { status: "ACTIVE" } } }
-      })
-    : null;
+  // 2. 🚀 AUTO-REGISTRO EN PRIMER LOGIN (Exigido por el manual de usuarios)
+  let currentDriver = null;
+  if (userId && sessionClaims?.role === "driver") {
+    currentDriver = await prisma.driver.upsert({
+      where: { clerk_user_id: userId },
+      update: {}, // Si ya existe, no toca nada
+      create: {
+        clerk_user_id: userId,
+        full_name: (sessionClaims as any).name || "Conductor Nuevo",
+        phone: "",
+        status: "ACTIVE",
+        verification_status: "PENDING", // Nace pendiente para ser aprobado por el Admin
+      },
+      include: { vehicles: { where: { status: "ACTIVE" } } }
+    });
+  }
 
   // 3. CONSTRUCCIÓN DEL FILTRO DE SEGÚN REGLA DE NEGOCIO
   const whereClause: any = { status };
   
   if (status === "AVAILABLE") {
-    whereClause.driver_id = null; // En Marketplace solo se ven viajes huérfanos
+    whereClause.driver_id = null; 
   } else {
-    whereClause.driver = { clerk_user_id: userId }; // En otras pestañas solo se ven los propios
+    whereClause.driver = { clerk_user_id: userId }; 
   }
 
-  // 4. Consulta paginada segura con Prisma
   const [totalCount, pools] = await prisma.$transaction([
-    prisma.pool.count({
-      where: whereClause,
-    }),
+    prisma.pool.count({ where: whereClause }),
     prisma.pool.findMany({
       where: whereClause,
       skip,
@@ -67,8 +73,7 @@ export default async function MarketplacePage({
   const totalPages = Math.ceil(totalCount / pageSize);
 
   return (
-    <div className="container mx-auto p-4 max-w-4xl font-[family-name:var(--font-geist-sans)]">
-      
+    <div className="container mx-auto p-4 max-w-4xl font-sans">
       <header className="mb-6">
         <Link href="/" className="text-sm text-blue-600 hover:underline">&larr; Volver al Inicio</Link>
         <h1 className="text-3xl font-bold mt-2 text-[#0A192F]">Marketplace de Viajes</h1>
@@ -92,7 +97,7 @@ export default async function MarketplacePage({
         ))}
       </div>
 
-      {/* Listado */}
+      {/* Listado de Viajes */}
       <div className="space-y-4">
         {pools.length === 0 ? (
           <div className="p-8 text-center border rounded-lg bg-gray-50 text-gray-500">
@@ -102,7 +107,7 @@ export default async function MarketplacePage({
           pools.map((pool) => (
             <div key={pool.id} className="border p-6 rounded-lg shadow-sm bg-white flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div className="space-y-1 flex-1">
-                <p className="font-semibold text-lg text-[#0A192F]">Destino: {pool.destination_id}</p>
+                <p className="font-semibold text-lg text-[#0A192F]">Destino: {pool.destination_id.replace("dest_", "").replace("_", " ")}</p>
                 <p className="text-gray-600 text-sm">
                   <span className="font-medium">Salida:</span> {pool.departure_time.toLocaleString("es-AR")}
                 </p>
@@ -125,11 +130,12 @@ export default async function MarketplacePage({
               <div className="w-full md:w-auto flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                 {pool.status === "AVAILABLE" && (
                   <>
-                    {currentDriver?.verification_status !== "APPROVED" ? (
+                    {/* 🔒 FIX BLINDAJE: Verificación ultra segura contra nulos */}
+                    {(!currentDriver || currentDriver.verification_status !== "APPROVED") ? (
                       <span className="text-xs text-orange-600 bg-orange-50 border border-orange-200 px-3 py-2 rounded-lg text-center font-medium">
-                        🔒 Requiere cuenta verificada
+                        🔒 Requiere cuenta verificada por Admin
                       </span>
-                    ) : !currentDriver.vehicles || currentDriver.vehicles.length === 0 ? (
+                    ) : (!currentDriver.vehicles || currentDriver.vehicles.length === 0) ? (
                       <Link 
                         href="/driver/vehicles" 
                         className="text-xs text-blue-600 bg-blue-50 border border-blue-200 hover:bg-blue-100 px-3 py-2 rounded-lg text-center font-medium transition-colors"
@@ -138,33 +144,30 @@ export default async function MarketplacePage({
                       </Link>
                     ) : (
                       <form action={acceptPool as any} className="flex flex-col sm:flex-row gap-2 w-full">
-  <input type="hidden" name="poolId" value={pool.id} />
-  
-  <select 
-    name="vehicleId" 
-    required 
-    className="block w-full sm:w-48 text-xs rounded-lg border-gray-200 bg-gray-50 p-2 text-gray-700 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-blue-600"
-  >
-    <option value="">Seleccionar combi...</option>
-    {currentDriver.vehicles.map((v) => (
-      <option key={v.id} value={v.id}>
-        {v.brand} {v.model} ({v.license_plate})
-      </option>
-    ))}
-  </select>
-
-  <button 
-    type="submit"
-    className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-xs font-semibold whitespace-nowrap"
-  >
-    Aceptar Viaje
-  </button>
-</form>
+                        <input type="hidden" name="poolId" value={pool.id} />
+                        <select 
+                          name="vehicleId" 
+                          required 
+                          className="block w-full sm:w-48 text-xs rounded-lg border-gray-200 bg-gray-50 p-2 text-gray-700 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-blue-600"
+                        >
+                          <option value="">Seleccionar combi...</option>
+                          {currentDriver.vehicles.map((v) => (
+                            <option key={v.id} value={v.id}>
+                              {v.brand} {v.model} ({v.license_plate})
+                            </option>
+                          ))}
+                        </select>
+                        <button 
+                          type="submit"
+                          className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-xs font-semibold whitespace-nowrap"
+                        >
+                          Aceptar Viaje
+                        </button>
+                      </form>
                     )}
                   </>
                 )}
 
-                {/* Si el viaje es tuyo y ya avanzó de AVAILABLE, te habilita a gestionarlo */}
                 {pool.status !== "AVAILABLE" && (
                   <Link 
                     href={`/driver/pools/${pool.id}/active`}
