@@ -4,6 +4,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model Driver {
@@ -35,21 +36,55 @@ model Vehicle {
   pools         Pool[]
 }
 
+enum PoolStatus {
+  AVAILABLE
+  ASSIGNED
+  LOCKED
+  IN_PROGRESS
+  COMPLETED
+  CANCELED
+}
+
 model Pool {
-  id                  String   @id @default(cuid())
+  id                  String                                 @id @default(cuid())
   destination_id      String
   departure_time      DateTime
-  status              String   @default("AVAILABLE")
+  status              PoolStatus                             @default(AVAILABLE)
   driver_id           String?
   vehicle_id          String?
-  current_passengers  Int      @default(0)
-  max_capacity        Int      @default(15)
+  current_passengers  Int                                    @default(0)
+  max_capacity        Int                                    @default(15)
   target_user_id      String?
   hito                String?
   cancellation_reason String?
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  createdAt           DateTime                               @default(now())
+  updatedAt           DateTime                               @updatedAt
 
-  driver              Driver?  @relation(fields: [driver_id], references: [id])
-  vehicle             Vehicle? @relation(fields: [vehicle_id], references: [id])
+  driver              Driver?                                @relation(fields: [driver_id], references: [id])
+  vehicle             Vehicle?                               @relation(fields: [vehicle_id], references: [id])
+  
+  // 🚀 RELACIÓN AGREGADA: Permite acceder a la copia local de pasajeros de este viaje
+  manifest_passengers OperationalManifestSnapshotPassenger[]
+}
+
+// 🚀 NUEVO MODELO: Snapshot operativo del manifiesto final de pasajeros pagados
+model OperationalManifestSnapshotPassenger {
+  id                String   @id @default(cuid())
+  pool_id           String
+  reservation_id    String
+  passenger_user_id String
+  passenger_name    String
+  pickup_address    String
+  pickup_lat        Float
+  pickup_lng        Float
+  pickup_order      Int?     // Orden sugerido para retirar pasajeros
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relación con el Pool correspondiente
+  pool              Pool     @relation(fields: [pool_id], references: [id], onDelete: Cascade)
+
+  // Restricciones estructurales exigidas por el contrato del modelo de datos
+  @@unique([pool_id, reservation_id])
+  @@map("operational_manifest_snapshot_passengers")
 }

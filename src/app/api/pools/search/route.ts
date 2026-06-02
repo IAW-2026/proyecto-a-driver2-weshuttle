@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { apiError } from "@/lib/api-response";
+import { PoolStatus } from "@prisma/client";
 
 export async function GET(req: NextRequest) {
   try {
@@ -19,26 +20,26 @@ export async function GET(req: NextRequest) {
 
     const pools = await prisma.pool.findMany({
       where: {
-        destinationId: destinationId,
-        departureTime: departureTime,
+        destination_id: destinationId,
+        departure_time: departureTime,
         status: {
-          in: ["AVAILABLE", "ASSIGNED"],
+          in: [PoolStatus.AVAILABLE, PoolStatus.ASSIGNED],
         },
       },
     });
 
-    const compatiblePool = pools.find((p) => p.currentPassengers < p.maxCapacity);
+    const compatiblePool = pools.find((p) => p.current_passengers < p.max_capacity);
 
     if (compatiblePool) {
       return NextResponse.json({
         exists: true,
         pool: {
           pool_id: compatiblePool.id,
-          destination_id: compatiblePool.destinationId,
-          departure_time: compatiblePool.departureTime.toISOString(),
+          destination_id: compatiblePool.destination_id,
+          departure_time: compatiblePool.departure_time.toISOString(),
           status: compatiblePool.status,
-          current_passengers: compatiblePool.currentPassengers,
-          max_capacity: compatiblePool.maxCapacity,
+          current_passengers: compatiblePool.current_passengers,
+          max_capacity: compatiblePool.max_capacity,
         },
       });
     }

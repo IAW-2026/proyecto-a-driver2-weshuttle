@@ -1,46 +1,99 @@
+import { UserButton } from "@clerk/nextjs";
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 
-export default async function Home() {
+export default async function HomePage() {
+  // Recuperamos la sesión actual del usuario directamente en el servidor
   const { userId, sessionClaims } = await auth();
 
-  // Si el usuario está logueado, lo redirigimos a su dashboard correspondiente
-  if (userId) {
-    const role = sessionClaims?.role as string | undefined;
-    
-    if (role === "admin") {
-      redirect("/admin/dashboard");
-    } else if (role === "driver") {
-      redirect("/driver/dashboard");
-    } else {
-      return (
-        <div className="flex flex-col items-center justify-center min-h-[75vh] px-6 text-center">
-          <div className="bg-red-50 text-red-600 p-8 rounded-lg shadow-sm max-w-md border border-red-100">
-            <svg className="w-12 h-12 mx-auto mb-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-            <h1 className="text-2xl font-bold mb-2">Acceso Denegado</h1>
-            <p>Esta aplicación es exclusiva para Conductores y Administradores de WeShuttle. Tu cuenta actual no tiene los permisos necesarios.</p>
-          </div>
-        </div>
-      );
-    }
+  // Si no hay un usuario autenticado, lo redirigimos a iniciar sesión
+  if (!userId) {
+    redirect("/sign-in");
   }
 
-  // Landing page genérica si no está logueado
+  // Extraemos el rol mapeado desde los Custom Claims de Clerk
+  const role = (sessionClaims?.role as string) || null;
+  
+  // Separamos las banderas de acceso de manera limpia
+  const isDriver = role === "driver";
+  const isAdmin = role === "admin";
+  const hasAccess = isDriver || isAdmin; // Ambos roles pertenecen al ecosistema de la Driver App
+
   return (
-    <main className="flex flex-col flex-1 items-center justify-center min-h-[80vh] p-8 text-center bg-slate-50">
-      <h1 className="text-5xl font-extrabold text-slate-900 mb-4 tracking-tight">
-        WeShuttle <span className="text-blue-600">Driver</span>
-      </h1>
-      <p className="text-lg text-slate-600 mb-8 max-w-md mx-auto leading-relaxed">
-        Portal operativo exclusivo para conductores de la plataforma. Gestiona tus vehículos y acepta nuevos viajes de pool.
-      </p>
-      <Link 
-        href="/sign-in" 
-        className="px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition duration-200 shadow-sm"
-      >
-        Iniciar Sesión
-      </Link>
-    </main>
+    <div className="p-8 min-h-screen bg-[#F7F9FB]">
+      {/* Encabezado Principal */}
+      <header className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold text-[#0A192F]">Driver App - WeShuttle</h1>
+        <UserButton />
+      </header>
+      
+      <main>
+        {/* Mensaje de Bienvenida Dinámico según el Rol */}
+        <p className="text-[#4B5563]">
+          {isAdmin 
+            ? "Bienvenido al panel global de administración." 
+            : "Bienvenido al panel del conductor."}
+        </p>
+
+        {/* Cuadrícula de Accesos Autorizados */}
+        {hasAccess && (
+          <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl">
+            
+            {/* 1. Marketplace de Viajes (Común para Driver y Admin) */}
+            <Link 
+              href="/driver/marketplace" 
+              className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 hover:border-blue-500 hover:shadow-md transition-all group"
+            >
+              <h3 className="text-xl font-semibold text-[#0A192F] mb-2 group-hover:text-blue-600">Marketplace de Viajes &rarr;</h3>
+              <p className="text-sm text-gray-500">Busca y acepta nuevos pools disponibles para conducir.</p>
+            </Link>
+
+            {/* 2. Gestión de Vehículos (Común para Driver y Admin) */}
+            <Link 
+              href="/driver/vehicles" 
+              className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 hover:border-blue-500 hover:shadow-md transition-all group"
+            >
+              <h3 className="text-xl font-semibold text-[#0A192F] mb-2 group-hover:text-blue-600">Mis Vehículos &rarr;</h3>
+              <p className="text-sm text-gray-500">Gestiona los vehículos registrados en tu cuenta.</p>
+            </Link>
+
+            {/* 3. Panel de Administración Obligatorio (EXCLUSIVO para Rol Admin) */}
+            {isAdmin && (
+              <Link 
+                href="/admin/dashboard" 
+                className="bg-blue-50 p-6 rounded-lg shadow-sm border border-blue-200 hover:border-blue-600 hover:shadow-md transition-all group col-span-1 md:col-span-2 mt-2"
+              >
+                <h3 className="text-xl font-semibold text-blue-900 mb-2 group-hover:text-blue-700">⚙️ Panel de Gestión de Administración &rarr;</h3>
+                <p className="text-sm text-blue-700">
+                  Control total de datos maestros (conductores y vehículos), auditorías operativas y visualización de reportes analíticos del negocio.
+                </p>
+              </Link>
+            )}
+
+          </div>
+        )}
+
+        {/* Control de Bloqueo para Usuarios sin Rol Asignado */}
+        {!hasAccess && (
+          <div className="mt-8 p-6 bg-yellow-50 rounded-lg shadow-sm border border-yellow-200 max-w-lg">
+            <p className="text-yellow-800 text-sm font-medium">
+              ⚠️ Tu cuenta no tiene asignado un rol operativo autorizado. Contacta a soporte para verificar tu estado en Clerk.
+            </p>
+          </div>
+        )}
+        
+        {/* Bloque de Depuración de Credenciales */}
+        <div className="mt-12 p-6 bg-white rounded-lg shadow-sm border border-gray-100 max-w-lg">
+          <h2 className="text-lg font-semibold text-gray-800 mb-4">Información de depuración (Clerk)</h2>
+          <p className="text-sm text-gray-600 mb-2">
+            <strong>Clerk User ID:</strong> <span className="font-mono bg-gray-50 px-2 py-1 rounded border">{userId}</span>
+          </p>
+          <p className="text-sm text-gray-600">
+            <strong>Rol actual:</strong> <span className="font-mono bg-gray-50 px-2 py-1 rounded border">{role || "Ninguno / Sin asignar"}</span>
+          </p>
+        </div>
+      </main>
+    </div>
   );
 }
