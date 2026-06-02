@@ -1,0 +1,55 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Driver {
+  id                  String    @id @default(cuid())
+  clerk_user_id       String    @unique
+  full_name           String?
+  phone               String?
+  status              String    @default("ACTIVE")
+  verification_status String    @default("PENDING")
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  vehicles            Vehicle[]
+  pools               Pool[]
+}
+
+model Vehicle {
+  id            String   @id @default(cuid())
+  driver_id     String
+  brand         String
+  model         String
+  license_plate String   @unique
+  capacity      Int      @default(15)
+  status        String   @default("ACTIVE")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  driver        Driver   @relation(fields: [driver_id], references: [id])
+  pools         Pool[]
+}
+
+model Pool {
+  id                  String   @id @default(cuid())
+  destination_id      String
+  departure_time      DateTime
+  status              String   @default("AVAILABLE")
+  driver_id           String?
+  vehicle_id          String?
+  current_passengers  Int      @default(0)
+  max_capacity        Int      @default(15)
+  target_user_id      String?
+  hito                String?
+  cancellation_reason String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  driver              Driver?  @relation(fields: [driver_id], references: [id])
+  vehicle             Vehicle? @relation(fields: [vehicle_id], references: [id])
+}
