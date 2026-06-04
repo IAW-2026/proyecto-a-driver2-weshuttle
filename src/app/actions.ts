@@ -32,9 +32,9 @@ export async function registerVehicle(formData: FormData) {
     const brand = formData.get('brand') as string;
     const model = formData.get('model') as string;
     const licensePlate = (formData.get('license_plate') as string).toUpperCase().replace(/\s/g, '');
-    const capacity = parseInt(formData.get('capacity') as string, 10);
+    const capacity = 15; // Capacidad fija a 15 pasajeros
 
-    if (!brand || !model || !licensePlate || isNaN(capacity)) {
+    if (!brand || !model || !licensePlate) {
       return { error: "Todos los campos son obligatorios." };
     }
     if (capacity <= 0 || capacity > 15) {

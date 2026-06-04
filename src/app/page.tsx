@@ -43,33 +43,47 @@ export default async function HomePage() {
             {/* 1. Marketplace de Viajes (Común para Driver y Admin) */}
             <Link 
               href="/driver/marketplace" 
-              className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 hover:border-blue-500 hover:shadow-md transition-all group"
+              className="bg-white p-6 rounded-xl shadow-sm border border-[#D8DADC] hover:border-[#0A192F] hover:shadow-md transition-all group"
             >
               <h3 className="text-xl font-semibold text-[#0A192F] mb-2 group-hover:text-blue-600">Marketplace de Viajes &rarr;</h3>
               <p className="text-sm text-gray-500">Busca y acepta nuevos pools disponibles para conducir.</p>
             </Link>
 
-            {/* 2. Gestión de Vehículos (Común para Driver y Admin) */}
-            <Link 
-              href="/driver/vehicles" 
-              className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 hover:border-blue-500 hover:shadow-md transition-all group"
-            >
-              <h3 className="text-xl font-semibold text-[#0A192F] mb-2 group-hover:text-blue-600">Mis Vehículos &rarr;</h3>
-              <p className="text-sm text-gray-500">Gestiona los vehículos registrados en tu cuenta.</p>
-            </Link>
+            {/* 2. Vehículos Registrados (EXCLUSIVO para Rol Admin) */}
+            {isAdmin && (
+              <Link 
+                href="/admin/vehicles" 
+                className="bg-white p-6 rounded-xl shadow-sm border border-[#D8DADC] hover:border-[#0A192F] hover:shadow-md transition-all group"
+              >
+                <h3 className="text-xl font-semibold text-[#0A192F] mb-2 group-hover:text-blue-600">🚗 Vehículos Registrados &rarr;</h3>
+                <p className="text-sm text-gray-500">Visualiza todos los vehículos de la plataforma, patentes y sus conductores.</p>
+              </Link>
+            )}
 
             {/* 3. Panel de Administración Obligatorio (EXCLUSIVO para Rol Admin) */}
             {isAdmin && (
               <Link 
                 href="/admin/dashboard" 
-                className="bg-blue-50 p-6 rounded-lg shadow-sm border border-blue-200 hover:border-blue-600 hover:shadow-md transition-all group col-span-1 md:col-span-2 mt-2"
+                className="bg-[#EFF6FF] p-6 rounded-xl shadow-sm border border-[#D8DADC] hover:border-[#0A192F] hover:shadow-md transition-all group col-span-1 md:col-span-2 mt-2"
               >
-                <h3 className="text-xl font-semibold text-blue-900 mb-2 group-hover:text-blue-700">⚙️ Panel de Gestión de Administración &rarr;</h3>
-                <p className="text-sm text-blue-700">
+                <h3 className="text-xl font-semibold text-[#0A192F] mb-2 group-hover:text-blue-700">⚙️ Panel de Gestión de Administración &rarr;</h3>
+                <p className="text-sm text-slate-600">
                   Control total de datos maestros (conductores y vehículos), auditorías operativas y visualización de reportes analíticos del negocio.
                 </p>
               </Link>
             )}
+
+            { //Mostrar mis vehiculos solo para el driver
+              isDriver && (
+                <Link 
+                  href="/driver/vehicles" 
+                  className="bg-white p-6 rounded-xl shadow-sm border border-[#D8DADC] hover:border-[#0A192F] hover:shadow-md transition-all group"
+                >
+                  <h3 className="text-xl font-semibold text-[#0A192F] mb-2 group-hover:text-blue-600">Mis Vehículos &rarr;</h3>
+                  <p className="text-sm text-gray-500">Gestiona los vehículos registrados en tu cuenta.</p>
+                </Link> 
+              )}
+            
 
           </div>
         )}

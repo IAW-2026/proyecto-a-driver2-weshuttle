@@ -29,17 +29,17 @@ export default function DriverStatusForm({ driverId, currentStatus }: Props) {
       value={currentStatus}
       onChange={handleChange}
       disabled={isPending}
-      className={`block w-full rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset focus:ring-2 focus:ring-inset sm:text-sm sm:leading-6 disabled:opacity-50 transition-colors ${
-        currentStatus === 'APPROVED' ? 'ring-green-600 bg-green-50 text-green-900' : ''
+      className={`block w-full rounded-lg border py-1.5 pl-3 pr-10 text-sm font-semibold disabled:opacity-50 transition-colors focus:outline-none ${
+        currentStatus === 'APPROVED' ? 'border-[#10B981] bg-[#ECFDF5] text-[#047857]' : ''
       } ${
-        currentStatus === 'REJECTED' ? 'ring-red-600 bg-red-50 text-red-900' : ''
+        currentStatus === 'REJECTED' ? 'border-[#EF4444] bg-[#FEF2F2] text-[#B91C1C]' : ''
       } ${
-        currentStatus === 'PENDING' ? 'ring-yellow-600 bg-yellow-50 text-yellow-900' : ''
+        currentStatus === 'PENDING' ? 'border-[#F59E0B] bg-[#FFFBEB] text-[#B45309]' : ''
       }`}
     >
-      <option value="PENDING">Pendiente</option>
-      <option value="APPROVED">Verificado</option> {/* 🚀 CAMBIADO AQUÍ */}
-      <option value="REJECTED">Rechazado</option>
+      <option value="PENDING" className="bg-white text-gray-900">Pendiente</option>
+      <option value="APPROVED" className="bg-white text-gray-900">Verificado</option>
+      <option value="REJECTED" className="bg-white text-gray-900">Rechazado</option>
     </select>
   );
 }
