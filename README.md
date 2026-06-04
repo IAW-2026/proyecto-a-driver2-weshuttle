@@ -1,7 +1,7 @@
 # WeShuttle — Driver App (Etapa 2)
 
 ## 1. Link al Deploy de Producción
-🚀 **URL del proyecto en vivo:** [AGREGAR_ACA_EL_LINK_DE_VERCEL_MAÑANA]
+🚀 **URL del proyecto en vivo:** https://proyecto-a-driver2-weshuttle.vercel.app
 
 ---
 
@@ -46,9 +46,3 @@ La **Driver App** constituye el núcleo operativo de la plataforma, encargándos
 * **Estrategia de Resiliencia (Snapshot Local):** Siguiendo las pautas de arquitectura, la aplicación no consume datos dinámicos de reservas de otras apps durante el recorrido. Al transicionar a `LOCKED`/`IN_PROGRESS`, se consolida de manera persistente una copia local del manifiesto definitivo de pasajeros con reservas pagas (`operational_manifest_snapshot_passengers`), garantizando que el chofer pueda completar el itinerario aun ante fallas críticas de red o caídas de servicios externos.
 * **Máquina de Estados de Botón Único (UX de Conducción):** En lugar de forzar al chofer a interactuar con listas desplegables complejas mientras maneja, se diseñó un botón contextual único en la pantalla de viaje activo. El botón procesa el itinerario de forma lineal guiándose por el orden estricto de recogida (`pickup_order`), alternando de forma segura entre los hitos operativos exactos exigidos por el contrato del sistema ("En camino", "Llegué al punto de retiro", "Pasajero a bordo").
 * **Validación Robusta y Paginación:** Todos los formularios críticos cuentan con esquemas estrictos de validación en el servidor mediante Zod (ej. patentes argentinas y capacidades). Adicionalmente, el marketplace y los reportes están completamente paginados mapeando los parámetros directamente sobre los Query Params de la URL para preservar el estado del navegador.
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
