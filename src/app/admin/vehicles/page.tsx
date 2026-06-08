@@ -206,7 +206,7 @@ export default async function AdminVehiclesPage({ searchParams }: PageProps) {
                                 : "bg-red-50 text-red-700 ring-1 ring-inset ring-red-600/20"
                             }`}>
                               <span className={`h-1.5 w-1.5 rounded-full ${v.status === "ACTIVE" ? "bg-green-600" : "bg-red-600"}`} />
-                              {v.status}
+                              {v.status === "ACTIVE" ? "Activo" : "Inactivo"}
                             </span>
                           </td>
                           {/* Fecha Registro */}

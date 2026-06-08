@@ -116,11 +116,25 @@ async function main() {
       id: 'pool_assigned_03',
       destination_id: 'dest_parque_industrial',
       departure_time: new Date('2026-06-16T06:00:00Z'),
-      status: 'ASSIGNED',
+      status: 'AVAILABLE',
       current_passengers: 12,
       max_capacity: 15,
-      driver_id: driverJuliana.id,
-      vehicle_id: combiSprinter.id,
+      driver_id: null,
+      vehicle_id: null,
+    },
+  });
+
+  // Pool 7: Viaje de Prueba con 8 pasajeros (Asignado a Juliana)
+  await prisma.pool.create({
+    data: {
+      id: 'pool7',
+      destination_id: 'dest_parque_industrial',
+      departure_time: new Date(new Date().getTime() + 45 * 60 * 1000), // En 45 minutos (dentro del rango de auto-lock)
+      status: 'AVAILABLE',
+      current_passengers: 8,
+      max_capacity: 15,
+      driver_id: null,
+      vehicle_id: null,
     },
   });
 
@@ -130,13 +144,13 @@ async function main() {
       id: 'pool_progress_04',
       destination_id: 'dest_polo_petroquimico',
       departure_time: new Date('2026-06-12T07:00:00Z'),
-      status: 'IN_PROGRESS',
+      status: 'AVAILABLE',
       current_passengers: 2,
       max_capacity: 15,
-      driver_id: driverJuliana.id,
-      vehicle_id: combiSprinter.id,
-      target_user_id: 'usr_rider_simulado_01',
-      hito: 'El conductor está en camino a tu ubicación',
+      driver_id: null,
+      vehicle_id: null,
+      target_user_id: null,
+      hito: null,
     },
   });
 
@@ -170,31 +184,79 @@ async function main() {
   console.log('🚌 Pools (Viajes) creados en todos los estados reglamentarios.');
 
   // 5. INYECCIÓN EN TU NUEVA TABLA (OperationalManifestSnapshotPassenger)
-  // Aprovechamos y dejamos cargados pasajeros en el snapshot del viaje 'IN_PROGRESS' 
-  // para simular la resiliencia operativa del recorrido final
+  const mockNamesList = [
+    "Franco Gulino",
+    "Juan Ignacio Ibarra",
+    "Juliana Pagani",
+    "Juan Bassi",
+    "María Rodríguez",
+    "Carlos Sánchez",
+    "Ana Martínez",
+    "José Gómez",
+    "Laura Pérez",
+    "Daniel Díaz",
+    "Luis Torres",
+    "Sofía Flores"
+  ];
+
+  const passengersToSeed = [];
+
+  // Pasajeros para poolInProgress (2 pasajeros)
+  passengersToSeed.push({
+    pool_id: poolInProgress.id,
+    reservation_id: 'res_externa_rider_101',
+    passenger_user_id: 'usr_rider_simulado_01',
+    passenger_name: 'Franco Gulino',
+    pickup_address: 'Av. Alem 1250, Bahía Blanca',
+    pickup_lat: -38.718,
+    pickup_lng: -62.266,
+    pickup_order: 1,
+    passenger_status: 'PENDING'
+  });
+  passengersToSeed.push({
+    pool_id: poolInProgress.id,
+    reservation_id: 'res_externa_rider_102',
+    passenger_user_id: 'usr_rider_simulado_02',
+    passenger_name: 'Juan Ignacio Ibarra',
+    pickup_address: 'Sarmiento 850, Bahía Blanca',
+    pickup_lat: -38.713,
+    pickup_lng: -62.261,
+    pickup_order: 2,
+    passenger_status: 'PENDING'
+  });
+
+  // Pasajeros para pool7 (8 pasajeros)
+  for (let i = 0; i < 8; i++) {
+    passengersToSeed.push({
+      pool_id: 'pool7',
+      reservation_id: `res_mock_pool7_${i + 1}`,
+      passenger_user_id: `usr_mock_passenger_pool7_${i + 1}`,
+      passenger_name: mockNamesList[i % mockNamesList.length],
+      pickup_address: `Av. Alem ${1000 + (i * 100)}, Bahía Blanca`,
+      pickup_lat: -38.718 + (i * 0.002),
+      pickup_lng: -62.266 + (i * 0.002),
+      pickup_order: i + 1,
+      passenger_status: 'PENDING'
+    });
+  }
+
+  // Pasajeros para pool_available_02 (9 pasajeros)
+  for (let i = 0; i < 9; i++) {
+    passengersToSeed.push({
+      pool_id: 'pool_available_02',
+      reservation_id: `res_mock_pool_available_02_${i + 1}`,
+      passenger_user_id: `usr_mock_passenger_pool_available_02_${i + 1}`,
+      passenger_name: mockNamesList[(i + 3) % mockNamesList.length],
+      pickup_address: `Sarmiento ${800 + (i * 100)}, Bahía Blanca`,
+      pickup_lat: -38.713 + (i * 0.002),
+      pickup_lng: -62.261 + (i * 0.002),
+      pickup_order: i + 1,
+      passenger_status: 'PENDING'
+    });
+  }
+
   await prisma.operationalManifestSnapshotPassenger.createMany({
-    data: [
-      {
-        pool_id: poolInProgress.id,
-        reservation_id: 'res_externa_rider_101',
-        passenger_user_id: 'usr_rider_simulado_01',
-        passenger_name: 'Franco Gulino',
-        pickup_address: 'Av. Alem 1250, Bahía Blanca',
-        pickup_lat: -38.718,
-        pickup_lng: -62.266,
-        pickup_order: 1,
-      },
-      {
-        pool_id: poolInProgress.id,
-        reservation_id: 'res_externa_rider_102',
-        passenger_user_id: 'usr_rider_simulado_02',
-        passenger_name: 'Juan Ignacio Ibarra',
-        pickup_address: 'Sarmiento 850, Bahía Blanca',
-        pickup_lat: -38.713,
-        pickup_lng: -62.261,
-        pickup_order: 2,
-      },
-    ],
+    data: passengersToSeed
   });
 
   console.log('📑 Copia local del Manifiesto de pasajeros inyectada en el pool activo.');

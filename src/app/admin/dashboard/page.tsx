@@ -107,14 +107,14 @@ export default async function AdminDashboardPage() {
                   </thead>
                   <tbody className="divide-y divide-[#D8DADC] bg-white">
                     {drivers.length > 0 ? (
-                      drivers.map((driver: any) => (
+                      drivers.map((driver) => (
                         <tr key={driver.id} className="hover:bg-gray-50 transition-colors">
                           <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">{driver.full_name || 'Sin nombre'}</td>
                           <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500"><span className="truncate max-w-[120px] inline-block font-mono">{driver.clerk_user_id}</span></td>
                           <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                             {driver.vehicles && driver.vehicles.length > 0 ? (
                               <ul className="list-disc list-inside">
-                                {driver.vehicles.map((v: any) => (
+                                {driver.vehicles.map((v) => (
                                   <li key={v.id}>{v.brand} {v.model} <span className="text-xs text-slate-400">({v.license_plate})</span></li>
                                 ))}
                               </ul>

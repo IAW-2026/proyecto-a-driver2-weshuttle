@@ -10,6 +10,7 @@ datasource db {
 model Driver {
   id                  String    @id @default(cuid())
   clerk_user_id       String    @unique
+  email               String?
   full_name           String?
   phone               String?
   status              String    @default("ACTIVE")
@@ -78,6 +79,7 @@ model OperationalManifestSnapshotPassenger {
   pickup_lat        Float
   pickup_lng        Float
   pickup_order      Int?     // Orden sugerido para retirar pasajeros
+  passenger_status  String   @default("PENDING") // PENDING o COMPLETED
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
