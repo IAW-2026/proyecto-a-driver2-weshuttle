@@ -68,8 +68,8 @@ export default async function HomePage() {
               ¡Bienvenido/a, <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-indigo-100">{displayName}</span>! 👋
             </h2>
             <p className="text-blue-100/80 text-xs sm:text-sm max-w-lg mt-1 font-medium leading-relaxed">
-              {isAdmin 
-                ? "Supervisa el estado global de la flota, audita conductores y analiza el rendimiento histórico de las comisiones." 
+              {isAdmin
+                ? "Supervisa el estado global, audita conductores y analiza el rendimiento histórico de las comisiones."
                 : "Gestiona tus vehículos autorizados, acepta nuevas comisiones en el marketplace y controla tus viajes asignados."}
             </p>
           </div>
