@@ -1,5 +1,5 @@
 import { UserButton } from "@clerk/nextjs";
-import { auth } from "@clerk/nextjs/server";
+import { auth, currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import prisma from "@/lib/prisma";
@@ -15,6 +15,9 @@ export default async function HomePage() {
 
   // Extraemos el rol mapeado desde los Custom Claims de Clerk
   const role = (sessionClaims?.role as string) || null;
+
+  let displayName = "Usuario";
+  const user = await currentUser();
 
   // Si el usuario tiene el rol de conductor, verificamos si su perfil está completo
   if (role === "driver") {
@@ -32,6 +35,13 @@ export default async function HomePage() {
     if (isProfileIncomplete) {
       redirect("/driver-complete-profile");
     }
+
+    // Limpiamos el nombre de sufijos descriptivos del seed como " (Chofer Verificado)"
+    displayName = driver.full_name
+      ? driver.full_name.split(" (")[0]
+      : (user?.firstName || user?.fullName || "Conductor");
+  } else {
+    displayName = user?.firstName || user?.fullName || "Administrador";
   }
 
   // Separamos las banderas de acceso de manera limpia
@@ -48,12 +58,22 @@ export default async function HomePage() {
       </header>
 
       <main>
-        {/* Mensaje de Bienvenida Dinámico según el Rol */}
-        <p className="text-[#4B5563]">
-          {isAdmin
-            ? "Bienvenido al panel global de administración."
-            : "Bienvenido al panel del conductor."}
-        </p>
+        {/* Banner de Bienvenida Premium */}
+        <div className="bg-gradient-to-r from-[#0A192F] to-[#1B365D] text-white p-6 sm:p-8 rounded-2xl shadow-md mb-8 relative overflow-hidden">
+          <div className="flex flex-col gap-1.5 relative z-10">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-blue-300 bg-blue-900/50 px-2.5 py-0.5 rounded-full border border-blue-500/20 w-fit">
+              {isAdmin ? "Panel de Control Global" : "Conductor Verificado"}
+            </span>
+            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight mt-1">
+              ¡Bienvenido/a, <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-indigo-100">{displayName}</span>! 👋
+            </h2>
+            <p className="text-blue-100/80 text-xs sm:text-sm max-w-lg mt-1 font-medium leading-relaxed">
+              {isAdmin 
+                ? "Supervisa el estado global de la flota, audita conductores y analiza el rendimiento histórico de las comisiones." 
+                : "Gestiona tus vehículos autorizados, acepta nuevas comisiones en el marketplace y controla tus viajes asignados."}
+            </p>
+          </div>
+        </div>
 
         {/* Cuadrícula de Accesos Autorizados */}
         {hasAccess && (
