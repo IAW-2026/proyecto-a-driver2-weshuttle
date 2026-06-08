@@ -99,6 +99,17 @@ export default async function HomePage() {
               </Link>
             )}
 
+            {/* Historial de Viajes Admin (EXCLUSIVO para Rol Admin) */}
+            {isAdmin && (
+              <Link
+                href="/admin/history"
+                className="bg-white p-6 rounded-xl shadow-sm border border-[#D8DADC] hover:border-[#0A192F] hover:shadow-md transition-all group"
+              >
+                <h3 className="text-xl font-semibold text-[#0A192F] mb-2 group-hover:text-blue-600">📜 Historial de Viajes &rarr;</h3>
+                <p className="text-sm text-gray-500">Visualiza el registro histórico de todos los viajes completados en la plataforma.</p>
+              </Link>
+            )}
+
             {/* 3. Panel de Administración Obligatorio (EXCLUSIVO para Rol Admin) */}
             {isAdmin && (
               <Link
@@ -128,6 +139,13 @@ export default async function HomePage() {
                   >
                     <h3 className="text-xl font-semibold text-[#0A192F] mb-2 group-hover:text-blue-600">Mis Viajes &rarr;</h3>
                     <p className="text-sm text-gray-500">Consulta y gestiona tus recorridos asignados.</p>
+                  </Link>
+                  <Link
+                    href="/driver/history"
+                    className="bg-white p-6 rounded-xl shadow-sm border border-[#D8DADC] hover:border-[#0A192F] hover:shadow-md transition-all group"
+                  >
+                    <h3 className="text-xl font-semibold text-[#0A192F] mb-2 group-hover:text-blue-600">📜 Historial de Viajes &rarr;</h3>
+                    <p className="text-sm text-gray-500">Revisa tu historial de viajes completados y cobros liquidados.</p>
                   </Link>
                 </>
               )}
