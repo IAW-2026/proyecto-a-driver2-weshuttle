@@ -1,0 +1,92 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Driver {
+  id                  String    @id @default(cuid())
+  clerk_user_id       String    @unique
+  email               String?
+  full_name           String?
+  phone               String?
+  status              String    @default("ACTIVE")
+  verification_status String    @default("PENDING")
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  vehicles            Vehicle[]
+  pools               Pool[]
+}
+
+model Vehicle {
+  id            String   @id @default(cuid())
+  driver_id     String
+  brand         String
+  model         String
+  license_plate String   @unique
+  capacity      Int      @default(15)
+  status        String   @default("ACTIVE")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  driver        Driver   @relation(fields: [driver_id], references: [id])
+  pools         Pool[]
+}
+
+enum PoolStatus {
+  AVAILABLE
+  ASSIGNED
+  LOCKED
+  IN_PROGRESS
+  COMPLETED
+  CANCELED
+}
+
+model Pool {
+  id                  String                                 @id @default(cuid())
+  destination_id      String
+  departure_time      DateTime
+  status              PoolStatus                             @default(AVAILABLE)
+  driver_id           String?
+  vehicle_id          String?
+  current_passengers  Int                                    @default(0)
+  max_capacity        Int                                    @default(15)
+  target_user_id      String?
+  hito                String?
+  cancellation_reason String?
+  createdAt           DateTime                               @default(now())
+  updatedAt           DateTime                               @updatedAt
+
+  driver              Driver?                                @relation(fields: [driver_id], references: [id])
+  vehicle             Vehicle?                               @relation(fields: [vehicle_id], references: [id])
+  
+  // 🚀 RELACIÓN AGREGADA: Permite acceder a la copia local de pasajeros de este viaje
+  manifest_passengers OperationalManifestSnapshotPassenger[]
+}
+
+// 🚀 NUEVO MODELO: Snapshot operativo del manifiesto final de pasajeros pagados
+model OperationalManifestSnapshotPassenger {
+  id                String   @id @default(cuid())
+  pool_id           String
+  reservation_id    String
+  passenger_user_id String
+  passenger_name    String
+  pickup_address    String
+  pickup_lat        Float
+  pickup_lng        Float
+  pickup_order      Int?     // Orden sugerido para retirar pasajeros
+  passenger_status  String   @default("PENDING") // PENDING o COMPLETED
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relación con el Pool correspondiente
+  pool              Pool     @relation(fields: [pool_id], references: [id], onDelete: Cascade)
+
+  // Restricciones estructurales exigidas por el contrato del modelo de datos
+  @@unique([pool_id, reservation_id])
+  @@map("operational_manifest_snapshot_passengers")
+}
