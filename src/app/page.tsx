@@ -1,5 +1,5 @@
 import { UserButton } from "@clerk/nextjs";
-import { auth, currentUser } from "@clerk/nextjs/server";
+import { auth, currentUser, clerkClient } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import prisma from "@/lib/prisma";
@@ -13,8 +13,26 @@ export default async function HomePage() {
     redirect("/sign-in");
   }
 
+  const feedbackAppUrl = process.env.NEXT_PUBLIC_FEEDBACK_APP_URL || "http://localhost:3002";
+
   // Extraemos el rol mapeado desde los Custom Claims de Clerk
-  const role = (sessionClaims?.role as string) || null;
+  let role = (sessionClaims?.role as string) || null;
+
+  // Si el usuario no tiene rol asignado (nuevo registro), le asignamos "driver" por defecto.
+  if (!role) {
+    role = "driver";
+    try {
+      const client = await clerkClient();
+      await client.users.updateUserMetadata(userId, {
+        publicMetadata: {
+          role: "driver",
+        },
+      });
+      console.log(`[Clerk Auto-Role] Asignado rol 'driver' por defecto al usuario ${userId}`);
+    } catch (err) {
+      console.warn("No se pudo persistir el rol 'driver' en Clerk, continuando con rol local de fallback:", err);
+    }
+  }
 
   let displayName = "Usuario";
   const user = await currentUser();
@@ -147,6 +165,13 @@ export default async function HomePage() {
                     <h3 className="text-xl font-semibold text-[#0A192F] mb-2 group-hover:text-blue-600">📜 Historial de Viajes &rarr;</h3>
                     <p className="text-sm text-gray-500">Revisa tu historial de viajes completados y cobros liquidados.</p>
                   </Link>
+                  <a
+                    href={feedbackAppUrl}
+                    className="bg-[#FEF3C7] p-6 rounded-xl shadow-sm border border-[#FDE68A] hover:border-[#D97706] hover:shadow-md transition-all group"
+                  >
+                    <h3 className="text-xl font-semibold text-[#D97706] mb-2 group-hover:text-[#B45309]">⭐ Calificar Pasajeros &rarr;</h3>
+                    <p className="text-sm text-amber-800">Califica a los pasajeros de tus viajes en la Feedback App.</p>
+                  </a>
                 </>
               )}
 
