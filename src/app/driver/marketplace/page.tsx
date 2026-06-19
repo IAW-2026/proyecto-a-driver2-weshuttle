@@ -3,6 +3,7 @@ import { auth } from "@clerk/nextjs/server";
 import { getClerkUserEmail } from "@/lib/clerk-utils";
 import MarketplaceClient from "./MarketplaceClient";
 import { redirect } from "next/navigation";
+import { checkAndCancelExpiredPools } from "@/app/actions";
 
 export const metadata = {
   title: "Viajes Disponibles | WeShuttle Driver",
@@ -45,6 +46,9 @@ export default async function MarketplacePage({
     },
     include: { vehicles: { where: { status: "ACTIVE" } } }
   });
+
+  // Ejecutamos limpieza de pools vencidos sin conductor asignado
+  await checkAndCancelExpiredPools();
 
   // En el Marketplace de viajes, solo mostramos pools que están AVAILABLE (disponibles)
   const whereClause = {

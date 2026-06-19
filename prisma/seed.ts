@@ -87,7 +87,7 @@ async function main() {
     data: {
       id: 'pool_available_01',
       destination_id: 'dest_polo_petroquimico', // Destino industrial de Bahía Blanca
-      departure_time: new Date('2026-06-15T08:00:00Z'),
+      departure_time: new Date(new Date().getTime() + 3 * 60 * 60 * 1000), // En 3 horas
       status: 'AVAILABLE',
       current_passengers: 5, // Pasajeros simulados esperando chofer
       max_capacity: 15,
@@ -101,7 +101,7 @@ async function main() {
     data: {
       id: 'pool_available_02',
       destination_id: 'dest_puerto_white',
-      departure_time: new Date('2026-06-15T14:30:00Z'),
+      departure_time: new Date(new Date().getTime() + 5 * 60 * 60 * 1000), // En 5 horas
       status: 'AVAILABLE',
       current_passengers: 9,
       max_capacity: 15,
@@ -115,7 +115,7 @@ async function main() {
     data: {
       id: 'pool_assigned_03',
       destination_id: 'dest_parque_industrial',
-      departure_time: new Date('2026-06-16T06:00:00Z'),
+      departure_time: new Date(new Date().getTime() + 24 * 60 * 60 * 1000), // En 24 horas
       status: 'AVAILABLE',
       current_passengers: 12,
       max_capacity: 15,
@@ -129,7 +129,7 @@ async function main() {
     data: {
       id: 'pool7',
       destination_id: 'dest_parque_industrial',
-      departure_time: new Date(new Date().getTime() + 45 * 60 * 1000), // En 45 minutos (dentro del rango de auto-lock)
+      departure_time: new Date(new Date().getTime() + 2 * 60 * 60 * 1000), // En 2 horas (fuera del rango de auto-lock inicial)
       status: 'AVAILABLE',
       current_passengers: 8,
       max_capacity: 15,

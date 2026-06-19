@@ -25,7 +25,7 @@ export async function GET(req: NextRequest, { params }: Params) {
   try {
     const { pool_id } = await params;
     const searchParams = req.nextUrl.searchParams;
-    const statusFilter = searchParams.get("status");
+    const statusFilter = searchParams.get("payment_status") || searchParams.get("status");
 
     const pool = await prisma.pool.findUnique({
       where: { id: pool_id }

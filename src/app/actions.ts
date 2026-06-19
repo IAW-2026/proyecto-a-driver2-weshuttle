@@ -3,7 +3,7 @@
 import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { auth } from "@clerk/nextjs/server";
-import { triggerAutoCharge, getPoolPassengers, precreateReviews, settlePoolFunds } from "../../riderApi";
+import { triggerCreditAdjustments, getPoolPassengers, precreateReviews, settlePoolFunds, cancelPoolOnRiderApp } from "../../externalApis";
 import { z } from "zod";
 import { getClerkUserEmail } from "@/lib/clerk-utils";
 
@@ -427,8 +427,8 @@ export async function autoLockPool(poolId: string) {
   }
   */
 
-  // 1. Llamar a Payments App para iniciar cobros automáticos (auto-charge)
-  await triggerAutoCharge(poolId, pool.departure_time.toISOString(), pool.current_passengers);
+  // 1. Llamar a Payments App para iniciar el cálculo de ajustes de crédito (credit-adjustments)
+  await triggerCreditAdjustments(poolId, "POOL_LOCKED", pool.departure_time.toISOString(), pool.current_passengers);
 
   // 2. Obtener el manifiesto final de pasajeros pagados (PAID) desde la Rider App
   const manifestResponse = await getPoolPassengers(poolId, "PAID");
@@ -577,5 +577,46 @@ export async function completeDriverProfile(prevState: unknown, formData: FormDa
   } catch (err) {
     console.error("Error al completar perfil:", err);
     return { error: "Ocurrió un error interno al registrar tus datos." };
+  }
+}
+
+export async function checkAndCancelExpiredPools() {
+  try {
+    const now = new Date();
+    const oneHourFromNow = new Date(now.getTime() + 60 * 60 * 1000);
+
+    // Buscamos pools que sigan AVAILABLE y cuya salida sea en menos de 1 hora (o que ya pasó)
+    const expiredPools = await prisma.pool.findMany({
+      where: {
+        status: "AVAILABLE",
+        departure_time: {
+          lte: oneHourFromNow
+        }
+      }
+    });
+
+    for (const pool of expiredPools) {
+      await prisma.pool.update({
+        where: { id: pool.id },
+        data: { status: "CANCELED" }
+      });
+
+      // Notificar a la Rider App
+      await cancelPoolOnRiderApp(
+        pool.id,
+        "NO_DRIVER_ASSIGNED",
+        "El viaje fue cancelado porque no se asignó un conductor antes del horario límite."
+      );
+
+      // Notificar a la Payments App
+      await triggerCreditAdjustments(
+        pool.id,
+        "NO_DRIVER_ASSIGNED",
+        pool.departure_time.toISOString(),
+        pool.current_passengers
+      );
+    }
+  } catch (error) {
+    console.error("Error al procesar cancelación automática de pools vencidos:", error);
   }
 }

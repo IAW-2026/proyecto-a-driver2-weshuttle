@@ -24,18 +24,21 @@ export interface PoolPassengersResponse {
 }
 
 const mockNames = [
-  "Franco Gulino",
-  "Juan Ignacio Ibarra",
-  "Juliana Pagani",
-  "Juan Bassi",
-  "María Rodríguez",
-  "Carlos Sánchez",
-  "Ana Martínez",
-  "José Gómez",
-  "Laura Pérez",
-  "Daniel Díaz",
-  "Luis Torres",
-  "Sofía Flores"
+  "Franco Gulino", //1
+  "Juan Ignacio Ibarra", //2
+  "Juliana Pagani", //3
+  "Juan Bassi", //4
+  "María Rodríguez", //5
+  "Carlos Sánchez", //6
+  "Ana Martínez", //7
+  "José Gómez", //8
+  "Laura Pérez", //9
+  "Daniel Díaz", //10
+  "Luis Torres", //11
+  "Sofía Flores", //12
+  "Marcos Gomez", //13
+  "Sofia Anton", //14
+  "Valeria Salto", //15
 ];
 
 function getBaseUrl(envVar: string): string {
@@ -48,7 +51,7 @@ function getBaseUrl(envVar: string): string {
  */
 export async function getPoolPassengers(poolId: string, status?: string): Promise<PoolPassengersResponse> {
   const isMockMode = !process.env.RIDER_API_URL;
-  
+
   if (isMockMode) {
     try {
       const pool = await prisma.pool.findUnique({
@@ -98,7 +101,7 @@ export async function getPoolPassengers(poolId: string, status?: string): Promis
   const apiPath = `/api/pools/${poolId}/passengers`;
   const url = new URL(`${baseUrl}${apiPath}`);
   if (status) {
-    url.searchParams.append('status', status);
+    url.searchParams.append('payment_status', status);
   }
 
   try {
@@ -125,7 +128,7 @@ export async function getPoolPassengers(poolId: string, status?: string): Promis
  */
 export async function cancelPoolOnRiderApp(poolId: string, reason: string, message: string) {
   const isMockMode = !process.env.RIDER_API_URL;
-  
+
   if (isMockMode) {
     console.log(`[Rider Mock Cancel] Cancelando pool ${poolId} en Rider App. Razón: ${reason}. Mensaje: ${message}`);
     return {
@@ -155,22 +158,30 @@ export async function cancelPoolOnRiderApp(poolId: string, reason: string, messa
 }
 
 /**
- * Solicita el inicio de cobros automáticos en Payments App.
+ * Solicita el cálculo de ajustes de crédito en Payments App (cierre T-1h o cancelación).
  */
-export async function triggerAutoCharge(poolId: string, departureTime: string, currentPassengers: number) {
+export async function triggerCreditAdjustments(
+  poolId: string,
+  reason: "POOL_LOCKED" | "NO_DRIVER_ASSIGNED",
+  departureTime: string,
+  currentPassengers: number
+) {
   const isMockMode = !process.env.PAYMENTS_API_URL;
-  
+
   if (isMockMode) {
-    console.log(`[Payments Mock Auto-Charge] Iniciando cobro para Pool ${poolId} con ${currentPassengers} pasajeros.`);
+    console.log(`[Payments Mock Credit Adjustments] Calculando ajustes para Pool ${poolId} con motivo ${reason} y ${currentPassengers} pasajeros.`);
     return {
       pool_id: poolId,
-      auto_charge_status: "STARTED",
-      message: "El proceso de cobro automático fue iniciado."
+      reason,
+      final_price: reason === "NO_DRIVER_ASSIGNED" ? 0 : 3800,
+      processed_reservations: currentPassengers,
+      currency: "ARS",
+      credits_generated: []
     };
   }
 
   const baseUrl = getBaseUrl('PAYMENTS_API_URL');
-  const apiPath = `/api/payments/pools/${poolId}/auto-charge`;
+  const apiPath = `/api/payments/pools/${poolId}/credit-adjustments`;
 
   try {
     const response = await fetch(`${baseUrl}${apiPath}`, {
@@ -179,6 +190,7 @@ export async function triggerAutoCharge(poolId: string, departureTime: string, c
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
+        reason,
         departure_time: departureTime,
         current_passengers: currentPassengers
       }),
@@ -186,7 +198,7 @@ export async function triggerAutoCharge(poolId: string, departureTime: string, c
 
     return await response.json();
   } catch (error) {
-    console.error(`[Payments API] Error al iniciar cobros automáticos para pool ${poolId}:`, error);
+    console.error(`[Payments API] Error al iniciar ajustes de crédito para pool ${poolId}:`, error);
     return null;
   }
 }
@@ -196,7 +208,7 @@ export async function triggerAutoCharge(poolId: string, departureTime: string, c
  */
 export async function settlePoolFunds(poolId: string, driverUserId: string, completedAt: string) {
   const isMockMode = !process.env.PAYMENTS_API_URL;
-  
+
   if (isMockMode) {
     console.log(`[Payments Mock Settle] Liquidando fondos para Pool ${poolId} de Conductor ${driverUserId} completado a las ${completedAt}.`);
     return {
@@ -236,7 +248,7 @@ export async function settlePoolFunds(poolId: string, driverUserId: string, comp
  */
 export async function precreateReviews(poolId: string, driverUserId: string, startedAt: string) {
   const isMockMode = !process.env.FEEDBACK_API_URL;
-  
+
   if (isMockMode) {
     console.log(`[Feedback Mock Precreate] Precreando reseñas para Pool ${poolId} con Conductor ${driverUserId}.`);
     return {
@@ -274,7 +286,7 @@ export async function precreateReviews(poolId: string, driverUserId: string, sta
  */
 export async function getPassengerRatings(poolId: string) {
   const isMockMode = !process.env.FEEDBACK_API_URL;
-  
+
   if (isMockMode) {
     console.log(`[Feedback Mock Ratings] Obteniendo calificaciones de pasajeros para Pool ${poolId}.`);
     return {

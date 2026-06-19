@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { apiError } from "@/lib/api-response";
 import { PoolStatus } from "@prisma/client";
+import { checkAndCancelExpiredPools } from "@/app/actions";
 
 export async function GET(req: NextRequest) {
   try {
@@ -12,6 +13,9 @@ export async function GET(req: NextRequest) {
     if (!destinationId || !departureTimeParam) {
       return apiError("400 Bad Request", "destination_id o departure_time ausente o inválido.");
     }
+
+    // Limpieza de pools vencidos
+    await checkAndCancelExpiredPools();
 
     const departureTime = new Date(departureTimeParam);
     if (isNaN(departureTime.getTime())) {

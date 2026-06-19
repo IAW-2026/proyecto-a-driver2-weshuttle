@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { apiError } from "@/lib/api-response";
+import { checkAndCancelExpiredPools } from "@/app/actions";
 
 interface Params {
   params: Promise<{ pool_id: string }>;
@@ -9,6 +10,9 @@ interface Params {
 export async function GET(req: NextRequest, { params }: Params) {
   try {
     const { pool_id } = await params;
+
+    // Limpieza de pools vencidos
+    await checkAndCancelExpiredPools();
 
     const pool = await prisma.pool.findUnique({
       where: { id: pool_id }
