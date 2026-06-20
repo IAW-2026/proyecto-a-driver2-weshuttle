@@ -153,7 +153,7 @@ export default function MarketplaceClient({
                       Destino: {pool.destination_id.replace("dest_", "").replace("_", " ").toUpperCase()}
                     </p>
                     <p className="text-slate-600 text-sm">
-                      <span className="font-medium">Salida:</span> {new Date(pool.departure_time).toLocaleString("es-AR")}
+                      <span className="font-medium">Salida:</span> {new Date(pool.departure_time).toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" })} {new Date(pool.departure_time).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true })}
                     </p>
                     <div className="flex items-center gap-3 mt-2">
                       <span className="px-2.5 py-0.5 text-xs font-bold rounded-full border bg-[#ECFDF5] text-[#10B981] border-[#10B981]/20">

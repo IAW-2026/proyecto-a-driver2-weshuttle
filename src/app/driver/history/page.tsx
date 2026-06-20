@@ -74,8 +74,8 @@ export default async function DriverHistoryPage() {
               const dateStr = pool.departure_time.toLocaleDateString("es-AR", {
                 weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
               });
-              const timeStr = pool.departure_time.toLocaleTimeString("es-AR", {
-                hour: '2-digit', minute: '2-digit'
+              const timeStr = pool.departure_time.toLocaleTimeString("en-US", {
+                hour: '2-digit', minute: '2-digit', hour12: true
               });
 
               return (
@@ -95,7 +95,7 @@ export default async function DriverHistoryPage() {
                     </div>
                     <div className="text-left sm:text-right">
                       <p className="text-xs text-blue-200 capitalize font-medium">{dateStr}</p>
-                      <p className="text-sm font-bold text-white mt-0.5">{timeStr} hs</p>
+                      <p className="text-sm font-bold text-white mt-0.5">{timeStr}</p>
                     </div>
                   </div>
 
