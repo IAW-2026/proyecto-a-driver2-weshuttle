@@ -49,6 +49,17 @@ export async function POST(req: NextRequest) {
         status: "AVAILABLE",
         current_passengers: 1,
         max_capacity: 15,
+        manifest_passengers: {
+          create: {
+            reservation_id,
+            passenger_user_id,
+            passenger_name: "Pasajero", // Temporal, se sobrescribe en T-1h
+            pickup_address: pickup_point.address,
+            pickup_lat: pickup_point.lat,
+            pickup_lng: pickup_point.lng,
+            passenger_status: "PENDING"
+          }
+        }
       }
     });
 

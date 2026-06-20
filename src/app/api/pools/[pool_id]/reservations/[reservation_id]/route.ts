@@ -28,6 +28,14 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     // Si queda vacío se marca como CANCELED
     const newStatus = newPassengersCount === 0 ? "CANCELED" : pool.status;
 
+    // Eliminar de la tabla de snapshots temporales
+    await prisma.operationalManifestSnapshotPassenger.deleteMany({
+      where: {
+        pool_id: pool_id,
+        reservation_id: reservation_id
+      }
+    });
+
     const updatedPool = await prisma.pool.update({
       where: { id: pool_id },
       data: {

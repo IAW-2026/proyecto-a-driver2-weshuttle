@@ -39,15 +39,43 @@ export async function POST(req: NextRequest, { params }: Params) {
       return apiError("409 Conflict", "El pool alcanzó su capacidad máxima de pasajeros.");
     }
 
-    // Incrementar el contador de pasajeros
-    const updatedPool = await prisma.pool.update({
-      where: { id: pool_id },
-      data: {
-        current_passengers: {
-          increment: 1
+    // Verificar si la reserva ya está registrada en este pool para evitar duplicaciones
+    const existingPassenger = await prisma.operationalManifestSnapshotPassenger.findUnique({
+      where: {
+        pool_id_reservation_id: {
+          pool_id: pool_id,
+          reservation_id: reservation_id
         }
       }
     });
+
+    let updatedPool = pool;
+
+    if (!existingPassenger) {
+      // Registrar al pasajero en la tabla de snapshots temporales
+      await prisma.operationalManifestSnapshotPassenger.create({
+        data: {
+          pool_id,
+          reservation_id,
+          passenger_user_id,
+          passenger_name: "Pasajero", // Temporal, se sobrescribe en T-1h
+          pickup_address: pickup_point.address,
+          pickup_lat: pickup_point.lat,
+          pickup_lng: pickup_point.lng,
+          passenger_status: "PENDING"
+        }
+      });
+
+      // Incrementar el contador de pasajeros
+      updatedPool = await prisma.pool.update({
+        where: { id: pool_id },
+        data: {
+          current_passengers: {
+            increment: 1
+          }
+        }
+      });
+    }
 
     return NextResponse.json({
       pool_id: updatedPool.id,
