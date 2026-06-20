@@ -32,8 +32,8 @@ export async function POST(req: NextRequest, { params }: Params) {
       return apiError("404 Not Found", "El pool no existe.");
     }
 
-    if (pool.status !== "AVAILABLE") {
-      return apiError("409 Conflict", "El pool no está disponible para recibir nuevas reservas.");
+    if (pool.status !== "AVAILABLE" && pool.status !== "ASSIGNED") {
+      return apiError("409 Conflict", "El pool no está disponible para recibir nuevas reservas (debe ser AVAILABLE o ASSIGNED).");
     }
 
     if (pool.current_passengers >= pool.max_capacity) {

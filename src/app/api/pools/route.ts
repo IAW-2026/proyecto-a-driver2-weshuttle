@@ -26,12 +26,14 @@ export async function POST(req: NextRequest) {
       return apiError("400 Bad Request", "Formato de departure_time inválido.");
     }
 
-    // Validar si ya existe un pool disponible y compatible en el mismo horario y destino
+    // Validar si ya existe un pool compatible (AVAILABLE o ASSIGNED) en el mismo horario y destino
     const existingPool = await prisma.pool.findFirst({
       where: {
         destination_id,
         departure_time: departureDate,
-        status: "AVAILABLE",
+        status: {
+          in: ["AVAILABLE", "ASSIGNED"]
+        },
         current_passengers: {
           lt: 15
         }
