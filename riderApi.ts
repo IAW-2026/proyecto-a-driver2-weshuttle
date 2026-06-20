@@ -51,7 +51,6 @@ function getBaseUrl(envVar: string): string {
  */
 export async function getPoolPassengers(poolId: string, status?: string): Promise<PoolPassengersResponse> {
   const isMockMode = !process.env.RIDER_API_URL;
-  console.log(`[externalApis] getPoolPassengers para pool ${poolId} (filtro status: ${status}). Modo: ${isMockMode ? "MOCK" : "REAL (RIDER_API_URL=" + process.env.RIDER_API_URL + ")"}`);
 
   if (isMockMode) {
     try {
@@ -102,7 +101,7 @@ export async function getPoolPassengers(poolId: string, status?: string): Promis
   const apiPath = `/api/pools/${poolId}/passengers`;
   const url = new URL(`${baseUrl}${apiPath}`);
   if (status) {
-    url.searchParams.append('payment_status', status);
+    url.searchParams.append('status', status);
   }
 
   try {
@@ -159,30 +158,22 @@ export async function cancelPoolOnRiderApp(poolId: string, reason: string, messa
 }
 
 /**
- * Solicita el cálculo de ajustes de crédito en Payments App (cierre T-1h o cancelación).
+ * Solicita el inicio de cobros automáticos en Payments App.
  */
-export async function triggerCreditAdjustments(
-  poolId: string,
-  reason: "POOL_LOCKED" | "NO_DRIVER_ASSIGNED",
-  departureTime: string,
-  currentPassengers: number
-) {
+export async function triggerAutoCharge(poolId: string, departureTime: string, currentPassengers: number) {
   const isMockMode = !process.env.PAYMENTS_API_URL;
 
   if (isMockMode) {
-    console.log(`[Payments Mock Credit Adjustments] Calculando ajustes para Pool ${poolId} con motivo ${reason} y ${currentPassengers} pasajeros.`);
+    console.log(`[Payments Mock Auto-Charge] Iniciando cobro para Pool ${poolId} con ${currentPassengers} pasajeros.`);
     return {
       pool_id: poolId,
-      reason,
-      final_price: reason === "NO_DRIVER_ASSIGNED" ? 0 : 3800,
-      processed_reservations: currentPassengers,
-      currency: "ARS",
-      credits_generated: []
+      auto_charge_status: "STARTED",
+      message: "El proceso de cobro automático fue iniciado."
     };
   }
 
   const baseUrl = getBaseUrl('PAYMENTS_API_URL');
-  const apiPath = `/api/payments/pools/${poolId}/credit-adjustments`;
+  const apiPath = `/api/payments/pools/${poolId}/auto-charge`;
 
   try {
     const response = await fetch(`${baseUrl}${apiPath}`, {
@@ -191,7 +182,6 @@ export async function triggerCreditAdjustments(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        reason,
         departure_time: departureTime,
         current_passengers: currentPassengers
       }),
@@ -199,7 +189,7 @@ export async function triggerCreditAdjustments(
 
     return await response.json();
   } catch (error) {
-    console.error(`[Payments API] Error al iniciar ajustes de crédito para pool ${poolId}:`, error);
+    console.error(`[Payments API] Error al iniciar cobros automáticos para pool ${poolId}:`, error);
     return null;
   }
 }

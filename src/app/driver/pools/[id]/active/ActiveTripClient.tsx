@@ -1,7 +1,7 @@
 'use client';
 
 import { useTransition, useState } from "react";
-import { startJourney, advanceTripStep, completeTrip } from "@/app/actions";
+import { startJourneyFromList, advanceTripStep, completeTrip } from "@/app/actions";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -50,7 +50,7 @@ export default function ActiveTripClient({ pool, currentTargetPassenger }: Props
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     startTransition(async () => {
-      const result = await startJourney(formData);
+      const result = await startJourneyFromList(formData);
       if (result?.error) {
         addToast(result.error, "error");
       } else if (result?.success) {
@@ -165,14 +165,14 @@ export default function ActiveTripClient({ pool, currentTargetPassenger }: Props
         {/* 🚀 BOTÓN ÚNICO INTELIGENTE / MÁQUINA DE ESTADOS */}
         <div className="mb-6">
           {pool.status === "ASSIGNED" && (
-            <div className="bg-[#EFF6FF] border border-blue-200 rounded-lg p-4 text-center">
+            <div className="bg-[#EFF6FF] border border-blue-200 rounded-lg p-4 text-center mb-4">
               <p className="text-xs font-semibold text-[#0A192F]">
-                🔒 El viaje se confirmará automáticamente 1 hora antes de la salida para poder iniciar el recorrido.
+                El viaje se confirmará automáticamente 1 hora antes de la salida. Si deseas, puedes iniciar el recorrido ahora mismo.
               </p>
             </div>
           )}
 
-          {pool.status === "LOCKED" && (
+          {(pool.status === "ASSIGNED" || pool.status === "LOCKED") && (
             <form onSubmit={handleStartJourney} className="w-full">
               <input type="hidden" name="poolId" value={pool.id} />
               <button 

@@ -1,6 +1,7 @@
 import prisma from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { autoLockPool } from "@/app/actions";
+import { getPoolPassengers } from "../../../../../../externalApis";
 import ActiveTripClient from "./ActiveTripClient";
 
 interface Props {
@@ -21,37 +22,103 @@ export default async function ActiveTripPage({ params }: Props) {
 
   if (!pool) return notFound();
 
-  // 🚀 AUTO-LOCK CHECK: Si el pool está ASSIGNED, lo cerramos automáticamente e inyectamos cobro y manifiesto
+  // 🚀 AUTO-LOCK CHECK: Solo si falta 1 hora o menos para la salida (departure_time)
   if (pool.status === "ASSIGNED") {
-    await autoLockPool(pool.id);
-    const updatedPool = await prisma.pool.findUnique({
-      where: { id },
-      include: { manifest_passengers: { orderBy: { pickup_order: "asc" } } }
-    });
-    if (updatedPool) {
-      pool = updatedPool;
+    const now = new Date();
+    const oneHourFromNow = new Date(now.getTime() + 60 * 60 * 1000);
+    if (pool.departure_time <= oneHourFromNow) {
+      await autoLockPool(pool.id);
+      const updatedPool = await prisma.pool.findUnique({
+        where: { id },
+        include: { manifest_passengers: { orderBy: { pickup_order: "asc" } } }
+      });
+      if (updatedPool) {
+        pool = updatedPool;
+      }
+    }
+  }
+
+  // A partir de aquí garantizamos que pool no es null (si updatedPool fue null, pool sigue siendo el original no nulo)
+  const activePool = pool!;
+
+  // Cargar pasajeros según el estado del pool
+  let manifestPassengers: any[] = [];
+  if (activePool.status === "ASSIGNED") {
+    try {
+      const manifestResponse = await getPoolPassengers(activePool.id, "PAID");
+      if (manifestResponse && manifestResponse.passengers) {
+        manifestPassengers = manifestResponse.passengers.map((p, idx) => ({
+          id: p.reservation_id, // Usamos la reserva como ID temporal
+          passenger_name: p.passenger_name,
+          pickup_address: p.pickup_point.address,
+          passenger_user_id: p.passenger_user_id,
+          passenger_status: "PENDING",
+        }));
+      }
+    } catch (error) {
+      console.error("Error al obtener pasajeros en tiempo real desde la Rider App:", error);
+    }
+  } else {
+    // Si ya está LOCKED, IN_PROGRESS o COMPLETED
+    if (activePool.manifest_passengers.length === 0) {
+      // Intento de recuperación única si la BDD local no tiene registros
+      try {
+        const manifestResponse = await getPoolPassengers(activePool.id, "PAID");
+        if (manifestResponse && manifestResponse.passengers && manifestResponse.passengers.length > 0) {
+          // Guardar en la base de datos local para persistencia resiliente
+          await prisma.operationalManifestSnapshotPassenger.createMany({
+            data: manifestResponse.passengers.map((p, idx) => ({
+              pool_id: activePool.id,
+              reservation_id: p.reservation_id,
+              passenger_user_id: p.passenger_user_id,
+              passenger_name: p.passenger_name,
+              pickup_address: p.pickup_point.address,
+              pickup_lat: p.pickup_point.lat,
+              pickup_lng: p.pickup_point.lng,
+              pickup_order: idx + 1,
+              passenger_status: "PENDING",
+            }))
+          });
+
+          const passengersFromDb = await prisma.operationalManifestSnapshotPassenger.findMany({
+            where: { pool_id: activePool.id },
+            orderBy: { pickup_order: "asc" }
+          });
+          manifestPassengers = passengersFromDb.map((p) => ({
+            id: p.id,
+            passenger_name: p.passenger_name,
+            pickup_address: p.pickup_address,
+            passenger_user_id: p.passenger_user_id,
+            passenger_status: p.passenger_status,
+          }));
+        }
+      } catch (error) {
+        console.error("Error al recuperar y guardar el manifiesto en la base de datos:", error);
+      }
+    } else {
+      manifestPassengers = activePool.manifest_passengers.map((p) => ({
+        id: p.id,
+        passenger_name: p.passenger_name,
+        pickup_address: p.pickup_address,
+        passenger_user_id: p.passenger_user_id,
+        passenger_status: p.passenger_status,
+      }));
     }
   }
 
   // Buscamos los datos completos del pasajero al que estamos yendo a buscar actualmente
-  const currentTargetPassenger = pool.manifest_passengers.find(
-    p => p.passenger_user_id === pool.target_user_id
+  const currentTargetPassenger = manifestPassengers.find(
+    p => p.passenger_user_id === activePool.target_user_id
   ) || null;
 
   // Serializar objetos para transferir a Client Component de forma limpia
   const serializedPool = {
-    id: pool.id,
-    destination_id: pool.destination_id,
-    status: pool.status,
-    target_user_id: pool.target_user_id,
-    hito: pool.hito,
-    manifest_passengers: pool.manifest_passengers.map((p) => ({
-      id: p.id,
-      passenger_name: p.passenger_name,
-      pickup_address: p.pickup_address,
-      passenger_user_id: p.passenger_user_id,
-      passenger_status: p.passenger_status,
-    })),
+    id: activePool.id,
+    destination_id: activePool.destination_id,
+    status: activePool.status,
+    target_user_id: activePool.target_user_id,
+    hito: activePool.hito,
+    manifest_passengers: manifestPassengers,
   };
 
   const serializedTargetPassenger = currentTargetPassenger ? {
