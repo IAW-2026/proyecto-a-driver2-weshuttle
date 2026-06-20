@@ -14,6 +14,7 @@ export default async function HomePage() {
   }
 
   const feedbackAppUrl = process.env.NEXT_PUBLIC_FEEDBACK_APP_URL || "http://localhost:3002";
+  const paymentsAppUrl = process.env.NEXT_PUBLIC_PAYMENTS_APP_URL || "http://localhost:3003";
 
   // Extraemos el rol mapeado desde los Custom Claims de Clerk
   let role = (sessionClaims?.role as string) || null;
@@ -165,6 +166,13 @@ export default async function HomePage() {
                     <h3 className="text-xl font-semibold text-[#0A192F] mb-2 group-hover:text-blue-600">📜 Historial de Viajes &rarr;</h3>
                     <p className="text-sm text-gray-500">Revisa tu historial de viajes completados y cobros liquidados.</p>
                   </Link>
+                  <a
+                    href={paymentsAppUrl}
+                    className="bg-[#ECFDF5] p-6 rounded-xl shadow-sm border border-[#A7F3D0] hover:border-[#10B981] hover:shadow-md transition-all group"
+                  >
+                    <h3 className="text-xl font-semibold text-[#047857] mb-2 group-hover:text-emerald-700">💵 Ver Cobros y Finanzas &rarr;</h3>
+                    <p className="text-sm text-[#065F46]">Consulta tus liquidaciones, saldos y cobros en la Payments App.</p>
+                  </a>
                   <a
                     href={feedbackAppUrl}
                     className="bg-[#FEF3C7] p-6 rounded-xl shadow-sm border border-[#FDE68A] hover:border-[#D97706] hover:shadow-md transition-all group"
