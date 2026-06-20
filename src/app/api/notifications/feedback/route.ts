@@ -25,8 +25,17 @@ export async function POST(req: NextRequest) {
       return apiError("404 Not Found", "No existe el conductor o el pool indicado.");
     }
 
-    // Simular el envío de notificación (guardar en logs, consola o simplemente retornar éxito)
-    console.log(`[Feedback Notificación] Conductor ${driver_user_id} para Pool ${pool_id}: ${message}`);
+    // Guardar la notificación en la base de datos local
+    await prisma.notification.create({
+      data: {
+        driver_user_id,
+        pool_id,
+        message,
+        read: false
+      }
+    });
+
+    console.log(`[Feedback Notificación] Guardada notificación para Conductor ${driver_user_id} para Pool ${pool_id}: ${message}`);
 
     return NextResponse.json({
       notification_sent: true

@@ -620,3 +620,17 @@ export async function checkAndCancelExpiredPools() {
     console.error("Error al procesar cancelación automática de pools vencidos:", error);
   }
 }
+
+export async function markNotificationAsRead(id: string) {
+  try {
+    await prisma.notification.update({
+      where: { id },
+      data: { read: true }
+    });
+    revalidatePath("/");
+    return { success: true };
+  } catch (error) {
+    console.error("Error al marcar notificación como leída:", error);
+    return { error: "No se pudo marcar la notificación como leída." };
+  }
+}

@@ -2,6 +2,7 @@ import prisma from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { getClerkUserEmail } from "@/lib/clerk-utils";
 import MarketplaceClient from "./MarketplaceClient";
+import { getPoolPassengers, getPassengerRatings } from "../../../../externalApis";
 import { redirect } from "next/navigation";
 import { checkAndCancelExpiredPools } from "@/app/actions";
 
@@ -69,14 +70,41 @@ export default async function MarketplacePage({
   const totalPages = Math.ceil(totalCount / pageSize);
 
   // Serializar objetos para transferir a Client Component de forma limpia
-  const serializedPools = pools.map((p) => ({
-    id: p.id,
-    destination_id: p.destination_id,
-    departure_time: p.departure_time.toISOString(),
-    status: p.status,
-    current_passengers: p.current_passengers,
-    max_capacity: p.max_capacity,
-  }));
+  const serializedPools = await Promise.all(
+    pools.map(async (p) => {
+      let passengers: { name: string; pickup_address: string; rating?: number | null; total_reviews?: number }[] = [];
+      try {
+        const manifestResponse = await getPoolPassengers(p.id);
+        const ratingsResponse = await getPassengerRatings(p.id);
+
+        if (manifestResponse && manifestResponse.passengers) {
+          passengers = manifestResponse.passengers.map((pass) => {
+            const ratingData = ratingsResponse?.ratings?.find(
+              (r: any) => r.passenger_user_id === pass.passenger_user_id
+            );
+            return {
+              name: pass.passenger_name,
+              pickup_address: pass.pickup_point.address,
+              rating: ratingData ? ratingData.average_rating : null,
+              total_reviews: ratingData ? ratingData.total_reviews : 0,
+            };
+          });
+        }
+      } catch (error) {
+        console.error(`Error al obtener pasajeros de la Rider App para pool ${p.id}:`, error);
+      }
+
+      return {
+        id: p.id,
+        destination_id: p.destination_id,
+        departure_time: p.departure_time.toISOString(),
+        status: p.status,
+        current_passengers: p.current_passengers,
+        max_capacity: p.max_capacity,
+        passengers,
+      };
+    })
+  );
 
   const serializedDriver = {
     id: currentDriver.id,

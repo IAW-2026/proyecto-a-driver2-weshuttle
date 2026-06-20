@@ -90,3 +90,14 @@ model OperationalManifestSnapshotPassenger {
   @@unique([pool_id, reservation_id])
   @@map("operational_manifest_snapshot_passengers")
 }
+
+model Notification {
+  id             String   @id @default(cuid())
+  driver_user_id String   // Clerk user ID del conductor
+  pool_id        String
+  message        String
+  read           Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  @@map("notifications")
+}

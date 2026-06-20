@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import prisma from "@/lib/prisma";
 
+const feedbackAppUrl = process.env.NEXT_PUBLIC_FEEDBACK_APP_URL || "https://proyecto-a-feedback-weshuttle.vercel.app";
+
 export const metadata = {
   title: "Historial de Viajes | WeShuttle Driver",
 };
@@ -149,6 +151,21 @@ export default async function DriverHistoryPage() {
                       )}
                     </div>
 
+                  </div>
+
+                  {/* Footer del viaje con botón Calificar */}
+                  <div className="p-4 border-t border-[#D8DADC] flex justify-between items-center bg-[#F8FAFC]">
+                    <a
+                      href={`${feedbackAppUrl}?pool_id=${pool.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs font-bold text-[#D97706] hover:text-[#B45309] flex items-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      <span className="text-amber-500 text-sm">★</span> Calificar
+                    </a>
+                    <span className="text-xs text-slate-500 font-bold">
+                      Detalles &gt;
+                    </span>
                   </div>
                 </div>
               );

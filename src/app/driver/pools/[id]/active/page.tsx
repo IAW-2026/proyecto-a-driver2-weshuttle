@@ -1,7 +1,7 @@
 import prisma from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { autoLockPool } from "@/app/actions";
-import { getPoolPassengers } from "../../../../../../externalApis";
+import { getPoolPassengers, getPassengerRatings } from "../../../../../../externalApis";
 import ActiveTripClient from "./ActiveTripClient";
 
 interface Props {
@@ -41,19 +41,34 @@ export default async function ActiveTripPage({ params }: Props) {
   // A partir de aquí garantizamos que pool no es null (si updatedPool fue null, pool sigue siendo el original no nulo)
   const activePool = pool!;
 
+  // Cargar calificaciones desde Feedback App para este pool
+  let ratingsResponse: any = null;
+  try {
+    ratingsResponse = await getPassengerRatings(activePool.id);
+  } catch (error) {
+    console.error("Error al obtener calificaciones desde Feedback App:", error);
+  }
+
   // Cargar pasajeros según el estado del pool
   let manifestPassengers: any[] = [];
   if (activePool.status === "ASSIGNED") {
     try {
       const manifestResponse = await getPoolPassengers(activePool.id, "PAID");
       if (manifestResponse && manifestResponse.passengers) {
-        manifestPassengers = manifestResponse.passengers.map((p, idx) => ({
-          id: p.reservation_id, // Usamos la reserva como ID temporal
-          passenger_name: p.passenger_name,
-          pickup_address: p.pickup_point.address,
-          passenger_user_id: p.passenger_user_id,
-          passenger_status: "PENDING",
-        }));
+        manifestPassengers = manifestResponse.passengers.map((p, idx) => {
+          const ratingData = ratingsResponse?.ratings?.find(
+            (r: any) => r.passenger_user_id === p.passenger_user_id
+          );
+          return {
+            id: p.reservation_id, // Usamos la reserva como ID temporal
+            passenger_name: p.passenger_name,
+            pickup_address: p.pickup_point.address,
+            passenger_user_id: p.passenger_user_id,
+            passenger_status: "PENDING",
+            rating: ratingData ? ratingData.average_rating : null,
+            total_reviews: ratingData ? ratingData.total_reviews : 0,
+          };
+        });
       }
     } catch (error) {
       console.error("Error al obtener pasajeros en tiempo real desde la Rider App:", error);
@@ -84,25 +99,39 @@ export default async function ActiveTripPage({ params }: Props) {
             where: { pool_id: activePool.id },
             orderBy: { pickup_order: "asc" }
           });
-          manifestPassengers = passengersFromDb.map((p) => ({
-            id: p.id,
-            passenger_name: p.passenger_name,
-            pickup_address: p.pickup_address,
-            passenger_user_id: p.passenger_user_id,
-            passenger_status: p.passenger_status,
-          }));
+          manifestPassengers = passengersFromDb.map((p) => {
+            const ratingData = ratingsResponse?.ratings?.find(
+              (r: any) => r.passenger_user_id === p.passenger_user_id
+            );
+            return {
+              id: p.id,
+              passenger_name: p.passenger_name,
+              pickup_address: p.pickup_address,
+              passenger_user_id: p.passenger_user_id,
+              passenger_status: p.passenger_status,
+              rating: ratingData ? ratingData.average_rating : null,
+              total_reviews: ratingData ? ratingData.total_reviews : 0,
+            };
+          });
         }
       } catch (error) {
         console.error("Error al recuperar y guardar el manifiesto en la base de datos:", error);
       }
     } else {
-      manifestPassengers = activePool.manifest_passengers.map((p) => ({
-        id: p.id,
-        passenger_name: p.passenger_name,
-        pickup_address: p.pickup_address,
-        passenger_user_id: p.passenger_user_id,
-        passenger_status: p.passenger_status,
-      }));
+      manifestPassengers = activePool.manifest_passengers.map((p) => {
+        const ratingData = ratingsResponse?.ratings?.find(
+          (r: any) => r.passenger_user_id === p.passenger_user_id
+        );
+        return {
+          id: p.id,
+          passenger_name: p.passenger_name,
+          pickup_address: p.pickup_address,
+          passenger_user_id: p.passenger_user_id,
+          passenger_status: p.passenger_status,
+          rating: ratingData ? ratingData.average_rating : null,
+          total_reviews: ratingData ? ratingData.total_reviews : 0,
+        };
+      });
     }
   }
 
@@ -127,6 +156,8 @@ export default async function ActiveTripPage({ params }: Props) {
     pickup_address: currentTargetPassenger.pickup_address,
     passenger_user_id: currentTargetPassenger.passenger_user_id,
     passenger_status: currentTargetPassenger.passenger_status,
+    rating: currentTargetPassenger.rating,
+    total_reviews: currentTargetPassenger.total_reviews,
   } : null;
 
   return (

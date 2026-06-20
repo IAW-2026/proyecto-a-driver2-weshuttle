@@ -3,6 +3,7 @@ import { auth, currentUser, clerkClient } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import prisma from "@/lib/prisma";
+import NotificationsDropdown from "@/app/components/NotificationsDropdown";
 
 export default async function HomePage() {
   // Recuperamos la sesión actual del usuario directamente en el servidor
@@ -68,12 +69,37 @@ export default async function HomePage() {
   const isAdmin = role === "admin";
   const hasAccess = isDriver || isAdmin; // Ambos roles pertenecen al ecosistema de la Driver App
 
+  // Cargar notificaciones para el conductor
+  const notifications = hasAccess
+    ? await prisma.notification.findMany({
+        where: {
+          driver_user_id: userId,
+          read: false,
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+      })
+    : [];
+
   return (
     <div className="p-8 min-h-screen bg-[#F7F9FB]">
       {/* Encabezado Principal */}
       <header className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold text-[#0A192F]">WeShuttle - Conductores</h1>
-        <UserButton />
+        <div className="flex items-center gap-4">
+          {hasAccess && (
+            <NotificationsDropdown
+              initialNotifications={notifications.map((n) => ({
+                id: n.id,
+                pool_id: n.pool_id,
+                message: n.message,
+              }))}
+              feedbackAppUrl={feedbackAppUrl}
+            />
+          )}
+          <UserButton />
+        </div>
       </header>
 
       <main>

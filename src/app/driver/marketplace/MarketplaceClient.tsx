@@ -19,6 +19,13 @@ interface Driver {
   vehicles: Vehicle[];
 }
 
+interface PoolPassenger {
+  name: string;
+  pickup_address: string;
+  rating?: number | null;
+  total_reviews?: number;
+}
+
 interface Pool {
   id: string;
   destination_id: string;
@@ -26,6 +33,7 @@ interface Pool {
   status: string;
   current_passengers: number;
   max_capacity: number;
+  passengers?: PoolPassenger[];
 }
 
 interface Toast {
@@ -50,6 +58,19 @@ export default function MarketplaceClient({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [expandedPools, setExpandedPools] = useState<Set<string>>(new Set());
+
+  const toggleExpand = (poolId: string) => {
+    setExpandedPools((prev) => {
+      const next = new Set(prev);
+      if (next.has(poolId)) {
+        next.delete(poolId);
+      } else {
+        next.add(poolId);
+      }
+      return next;
+    });
+  };
 
   const addToast = (message: string, type: "success" | "error" | "info" = "success") => {
     const id = Math.random().toString(36).substring(2, 9);
@@ -125,62 +146,105 @@ export default function MarketplaceClient({
             </div>
           ) : (
             pools.map((pool) => (
-              <div key={pool.id} className="border border-[#D8DADC] p-6 rounded-xl shadow-sm bg-white flex flex-col md:flex-row justify-between items-start md:items-center gap-4 animate-scale-in">
-                <div className="space-y-1 flex-1">
-                  <p className="font-semibold text-lg text-[#0A192F]">
-                    Destino: {pool.destination_id.replace("dest_", "").replace("_", " ").toUpperCase()}
-                  </p>
-                  <p className="text-slate-600 text-sm">
-                    <span className="font-medium">Salida:</span> {new Date(pool.departure_time).toLocaleString("es-AR")}
-                  </p>
-                  <div className="flex items-center gap-2 mt-2">
-                    <span className="px-2.5 py-0.5 text-xs font-bold rounded-full border bg-[#ECFDF5] text-[#10B981] border-[#10B981]/20">
-                      Disponible
-                    </span>
-                    <span className="text-xs text-slate-500">
-                      Pasajeros: <strong className="text-slate-800">{pool.current_passengers} / {pool.max_capacity}</strong>
-                    </span>
+              <div key={pool.id} className="border border-[#D8DADC] p-6 rounded-xl shadow-sm bg-white flex flex-col gap-4 animate-scale-in">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 w-full">
+                  <div className="space-y-1 flex-1">
+                    <p className="font-semibold text-lg text-[#0A192F]">
+                      Destino: {pool.destination_id.replace("dest_", "").replace("_", " ").toUpperCase()}
+                    </p>
+                    <p className="text-slate-600 text-sm">
+                      <span className="font-medium">Salida:</span> {new Date(pool.departure_time).toLocaleString("es-AR")}
+                    </p>
+                    <div className="flex items-center gap-3 mt-2">
+                      <span className="px-2.5 py-0.5 text-xs font-bold rounded-full border bg-[#ECFDF5] text-[#10B981] border-[#10B981]/20">
+                        Disponible
+                      </span>
+                      <span className="text-xs text-slate-500">
+                        Pasajeros: <strong className="text-slate-800">{pool.current_passengers} / {pool.max_capacity}</strong>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => toggleExpand(pool.id)}
+                        className="text-xs text-[#0A192F] hover:text-slate-500 font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                      >
+                        {expandedPools.has(pool.id) ? "Ocultar pasajeros ▲" : "Ver pasajeros ▼"}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="w-full md:w-auto flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                    {(!currentDriver || currentDriver.verification_status !== "APPROVED") ? (
+                      <span className="text-xs text-[#B45309] bg-[#FFFBEB] border border-[#F59E0B]/20 px-3 py-2 rounded-lg text-center font-bold">
+                        🔒 Requiere cuenta verificada por Admin
+                      </span>
+                    ) : (!currentDriver.vehicles || currentDriver.vehicles.length === 0) ? (
+                      <Link 
+                        href="/driver/vehicles" 
+                        className="text-xs text-indigo-700 bg-[#EFF6FF] border border-blue-200 hover:bg-blue-100 px-3 py-2 rounded-lg text-center font-bold transition-colors"
+                      >
+                        🚘 Registra un vehículo para aceptar
+                      </Link>
+                    ) : (
+                      <form onSubmit={handleAcceptSubmit} className="flex flex-col sm:flex-row gap-2 w-full">
+                        <input type="hidden" name="poolId" value={pool.id} />
+                        <select 
+                          name="vehicleId" 
+                          required 
+                          disabled={isPending}
+                          className="block w-full sm:w-48 text-xs rounded-lg border border-[#D8DADC] bg-white p-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#0A192F] focus:border-[#0A192F] disabled:opacity-50"
+                        >
+                          <option value="">Seleccionar combi...</option>
+                          {currentDriver.vehicles.map((v) => (
+                            <option key={v.id} value={v.id}>
+                              {v.brand} {v.model} ({v.license_plate})
+                            </option>
+                          ))}
+                        </select>
+                        <button 
+                          type="submit"
+                          disabled={isPending}
+                          className="bg-[#0A192F] text-white px-4 py-2 rounded-lg hover:bg-slate-800 transition-colors text-xs font-bold whitespace-nowrap cursor-pointer disabled:opacity-50"
+                        >
+                          {isPending ? "Tomando..." : "Tomar Viaje"}
+                        </button>
+                      </form>
+                    )}
                   </div>
                 </div>
 
-                <div className="w-full md:w-auto flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                  {(!currentDriver || currentDriver.verification_status !== "APPROVED") ? (
-                    <span className="text-xs text-[#B45309] bg-[#FFFBEB] border border-[#F59E0B]/20 px-3 py-2 rounded-lg text-center font-bold">
-                      🔒 Requiere cuenta verificada por Admin
-                    </span>
-                  ) : (!currentDriver.vehicles || currentDriver.vehicles.length === 0) ? (
-                    <Link 
-                      href="/driver/vehicles" 
-                      className="text-xs text-indigo-700 bg-[#EFF6FF] border border-blue-200 hover:bg-blue-100 px-3 py-2 rounded-lg text-center font-bold transition-colors"
-                    >
-                      🚘 Registra un vehículo para aceptar
-                    </Link>
-                  ) : (
-                    <form onSubmit={handleAcceptSubmit} className="flex flex-col sm:flex-row gap-2 w-full">
-                      <input type="hidden" name="poolId" value={pool.id} />
-                      <select 
-                        name="vehicleId" 
-                        required 
-                        disabled={isPending}
-                        className="block w-full sm:w-48 text-xs rounded-lg border border-[#D8DADC] bg-white p-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#0A192F] focus:border-[#0A192F] disabled:opacity-50"
-                      >
-                        <option value="">Seleccionar combi...</option>
-                        {currentDriver.vehicles.map((v) => (
-                          <option key={v.id} value={v.id}>
-                            {v.brand} {v.model} ({v.license_plate})
-                          </option>
+                {expandedPools.has(pool.id) && (
+                  <div className="mt-2 pt-4 border-t border-slate-100 w-full animate-scale-in">
+                    <h4 className="text-xs font-bold text-[#0A192F] uppercase tracking-wider mb-3">Pasajeros del Pool</h4>
+                    {(!pool.passengers || pool.passengers.length === 0) ? (
+                      <p className="text-xs text-slate-400 italic">No hay pasajeros registrados en este pool.</p>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {pool.passengers.map((pass, idx) => (
+                          <div key={idx} className="p-3 bg-[#F7F9FB] rounded-lg border border-[#D8DADC]/60 flex items-center justify-between text-xs animate-scale-in">
+                            <div>
+                              <p className="font-semibold text-slate-800 flex items-center gap-1.5">
+                                {pass.name}
+                                {pass.rating !== undefined && pass.rating !== null ? (
+                                  <span className="text-[10px] bg-amber-50 text-amber-700 border border-amber-200 px-1.5 py-0.5 rounded-md font-bold flex items-center gap-0.5 shadow-sm">
+                                    ★ {pass.rating.toFixed(1)}
+                                    {pass.total_reviews !== undefined && pass.total_reviews > 0 && (
+                                      <span className="text-slate-400 font-normal">({pass.total_reviews})</span>
+                                    )}
+                                  </span>
+                                ) : (
+                                  <span className="text-[10px] bg-slate-100 text-slate-500 border border-slate-200 px-1.5 py-0.5 rounded-md font-bold flex items-center gap-0.5 shadow-sm">
+                                    ★ --
+                                  </span>
+                                )}
+                              </p>
+                              <p className="text-slate-500 text-[10px] mt-0.5">📍 {pass.pickup_address}</p>
+                            </div>
+                          </div>
                         ))}
-                      </select>
-                      <button 
-                        type="submit"
-                        disabled={isPending}
-                        className="bg-[#0A192F] text-white px-4 py-2 rounded-lg hover:bg-slate-800 transition-colors text-xs font-bold whitespace-nowrap cursor-pointer disabled:opacity-50"
-                      >
-                        {isPending ? "Tomando..." : "Tomar Viaje"}
-                      </button>
-                    </form>
-                  )}
-                </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             ))
           )}

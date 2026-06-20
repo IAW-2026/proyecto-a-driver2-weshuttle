@@ -11,6 +11,8 @@ interface Passenger {
   pickup_address: string;
   passenger_user_id: string;
   passenger_status: string;
+  rating?: number | null;
+  total_reviews?: number;
 }
 
 interface Pool {
@@ -243,7 +245,21 @@ export default function ActiveTripClient({ pool, currentTargetPassenger }: Props
             <div className="flex justify-between items-start mb-3">
               <div>
                 <span className="text-[10px] bg-[#EFF6FF] text-[#0A192F] border border-blue-100 px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wide">Pasajero Activo</span>
-                <h2 className="text-xl font-bold text-[#0A192F] mt-1">{currentTargetPassenger.passenger_name}</h2>
+                <h2 className="text-xl font-bold text-[#0A192F] mt-1 flex items-center gap-2">
+                  {currentTargetPassenger.passenger_name}
+                  {currentTargetPassenger.rating !== undefined && currentTargetPassenger.rating !== null ? (
+                    <span className="text-xs bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-md font-bold flex items-center gap-0.5 shadow-sm">
+                      ★ {currentTargetPassenger.rating.toFixed(1)}
+                      {currentTargetPassenger.total_reviews !== undefined && currentTargetPassenger.total_reviews > 0 && (
+                        <span className="text-slate-400 font-normal">({currentTargetPassenger.total_reviews})</span>
+                      )}
+                    </span>
+                  ) : (
+                    <span className="text-xs bg-slate-100 text-slate-500 border border-slate-200 px-2 py-0.5 rounded-md font-bold flex items-center gap-0.5 shadow-sm">
+                      ★ --
+                    </span>
+                  )}
+                </h2>
               </div>
               <div className="text-right">
                 <span className="text-[10px] text-slate-400 block font-medium">Hito del Sistema</span>
@@ -319,7 +335,21 @@ export default function ActiveTripClient({ pool, currentTargetPassenger }: Props
                         {isPickedUp ? "✓" : index + 1}
                       </span>
                       <div>
-                        <p className={isPickedUp ? "line-through text-slate-400" : "text-slate-800 font-medium"}>{p.passenger_name}</p>
+                        <p className={`${isPickedUp ? "line-through text-slate-400" : "text-slate-800 font-medium"} flex items-center gap-1.5`}>
+                          {p.passenger_name}
+                          {p.rating !== undefined && p.rating !== null ? (
+                            <span className="text-[9px] bg-amber-50 text-amber-700 border border-amber-200 px-1 py-0.2 rounded-md font-extrabold flex items-center gap-0.5 shadow-sm">
+                              ★ {p.rating.toFixed(1)}
+                              {p.total_reviews !== undefined && p.total_reviews > 0 && (
+                                <span className="text-slate-400 font-normal">({p.total_reviews})</span>
+                              )}
+                            </span>
+                          ) : (
+                            <span className="text-[9px] bg-slate-100 text-slate-500 border border-slate-200 px-1 py-0.2 rounded-md font-extrabold flex items-center gap-0.5 shadow-sm">
+                              ★ --
+                            </span>
+                          )}
+                        </p>
                         <p className="text-[10px] text-slate-400 truncate max-w-[280px]">{p.pickup_address}</p>
                       </div>
                     </div>
