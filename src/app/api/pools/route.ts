@@ -6,6 +6,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const { destination_id, departure_time, reservation_id, passenger_user_id, pickup_point } = body;
+    console.log(`[API POST /api/pools] Recibido request para crear pool. Body:`, JSON.stringify(body));
 
     if (
       !destination_id || 

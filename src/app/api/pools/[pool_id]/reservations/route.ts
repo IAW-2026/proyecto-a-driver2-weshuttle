@@ -11,6 +11,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     const { pool_id } = await params;
     const body = await req.json();
     const { reservation_id, passenger_user_id, pickup_point } = body;
+    console.log(`[API POST /api/pools/${pool_id}/reservations] Recibido request para agregar. Body:`, JSON.stringify(body));
 
     if (
       !reservation_id || 
@@ -39,15 +40,18 @@ export async function POST(req: NextRequest, { params }: Params) {
       return apiError("409 Conflict", "El pool alcanzó su capacidad máxima de pasajeros.");
     }
 
-    // Verificar si la reserva ya está registrada en este pool para evitar duplicaciones
-    const existingPassenger = await prisma.operationalManifestSnapshotPassenger.findUnique({
+    // Verificar si la reserva ya está registrada en este pool para evitar duplicaciones por reservation_id o passenger_user_id
+    const existingPassenger = await prisma.operationalManifestSnapshotPassenger.findFirst({
       where: {
-        pool_id_reservation_id: {
-          pool_id: pool_id,
-          reservation_id: reservation_id
-        }
+        pool_id: pool_id,
+        OR: [
+          { reservation_id: reservation_id },
+          { passenger_user_id: passenger_user_id }
+        ]
       }
     });
+
+    console.log(`[API POST /api/pools/${pool_id}/reservations] ¿Ya existe el pasajero?`, existingPassenger ? "SÍ" : "NO");
 
     let updatedPool = pool;
 
