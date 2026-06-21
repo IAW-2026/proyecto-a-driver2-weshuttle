@@ -4,6 +4,7 @@ import { useTransition, useState } from "react";
 import { startJourneyFromList, advanceTripStep, completeTrip } from "@/app/actions";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import TopNavBar from "@/app/components/TopNavBar";
 
 interface Passenger {
   id: string;
@@ -100,7 +101,7 @@ export default function ActiveTripClient({ pool, currentTargetPassenger }: Props
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F9FB] py-10 px-4 sm:px-6 font-sans text-slate-700">
+    <div className="min-h-screen bg-[#F7F9FB] font-sans text-slate-700">
       
       {/* Animaciones CSS personalizadas */}
       <style jsx global>{`
@@ -132,19 +133,16 @@ export default function ActiveTripClient({ pool, currentTargetPassenger }: Props
         }
       `}</style>
 
-      <div className="max-w-xl mx-auto">
+      <TopNavBar backUrl="/driver/my-trips" backLabel="Mis Viajes" />
+
+      <div className="max-w-xl mx-auto py-8 px-4 sm:px-6">
         <header className="mb-6 flex justify-between items-center">
           <div>
-            <Link 
-              href="/driver/my-trips" 
-              className="text-xs font-semibold text-[#0A192F] hover:text-slate-700 uppercase tracking-wider flex items-center gap-1 transition-colors"
-            >
-              &larr; Volver a Mis Viajes
-            </Link>
-            <h1 className="text-2xl font-bold text-[#0A192F] mt-2">Viaje en Curso</h1>
-            <p className="text-[10px] text-slate-400 font-mono">ID: {pool.id}</p>
+            <span className="text-[10px] text-slate-400 uppercase font-extrabold tracking-wider">Detalles del Viaje</span>
+            <h1 className="text-2xl font-bold text-[#0A192F] mt-0.5">Viaje en Curso</h1>
+            <p className="text-[10px] text-slate-400 font-mono mt-0.5">ID: {pool.id}</p>
           </div>
-          <span className={`px-2.5 py-1 rounded-full text-xs font-bold shadow-sm border ${
+          <span className={`px-3 py-1 rounded-full text-xs font-bold shadow-sm border ${
             pool.status === 'ASSIGNED' ? 'bg-[#EFF6FF] text-[#0A192F] border-blue-100' :
             pool.status === 'LOCKED' ? 'bg-[#FFFBEB] text-[#F59E0B] border-[#F59E0B]/20' : 
             pool.status === 'IN_PROGRESS' ? 'bg-indigo-50 text-indigo-700 border-indigo-100' : 
@@ -157,17 +155,22 @@ export default function ActiveTripClient({ pool, currentTargetPassenger }: Props
         </header>
 
         {/* 📍 DESTINO GLOBAL DE LA COMBI */}
-        <div className="border border-[#D8DADC] p-4 rounded-xl bg-white shadow-sm mb-4">
-          <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Destino del Pool</span>
-          <p className="text-base font-bold text-[#0A192F] mt-0.5">
-            {pool.destination_id.replace("dest_", "").replace("_", " ").toUpperCase()}
-          </p>
+        <div className="border border-[#D8DADC] p-4 rounded-xl bg-white shadow-[0_1px_3px_0_rgba(0,0,0,0.05)] mb-4 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-slate-50 text-[#0A192F] border border-[#D8DADC] flex items-center justify-center shrink-0">
+            <span className="material-symbols-outlined text-xl">flag</span>
+          </div>
+          <div>
+            <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">Destino del Pool</span>
+            <p className="text-base font-bold text-[#0A192F] mt-0.5">
+              {pool.destination_id.replace("dest_", "").replace("_", " ").toUpperCase()}
+            </p>
+          </div>
         </div>
 
         {/* 🚀 BOTÓN ÚNICO INTELIGENTE / MÁQUINA DE ESTADOS */}
         <div className="mb-6">
           {pool.status === "ASSIGNED" && (
-            <div className="bg-[#EFF6FF] border border-blue-200 rounded-lg p-4 text-center mb-4">
+            <div className="bg-[#EFF6FF] border border-blue-200 rounded-xl p-4 text-center mb-4">
               <p className="text-xs font-semibold text-[#0A192F]">
                 El viaje se confirmará automáticamente 1 hora antes de la salida. Si deseas, puedes iniciar el recorrido ahora mismo.
               </p>
@@ -180,9 +183,10 @@ export default function ActiveTripClient({ pool, currentTargetPassenger }: Props
               <button 
                 type="submit" 
                 disabled={isPending}
-                className="w-full bg-[#0A192F] hover:bg-slate-800 text-white font-bold py-4 px-6 rounded-lg shadow-sm text-base transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50"
+                className="w-full bg-[#0A192F] hover:bg-[#111827] text-white font-bold py-4 px-6 rounded-xl shadow-sm text-base transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                {isPending ? "Procesando..." : "🚀 INICIAR RECORRIDO OFICIAL"}
+                <span className="material-symbols-outlined">navigation</span>
+                {isPending ? "Procesando..." : "INICIAR RECORRIDO OFICIAL"}
               </button>
             </form>
           )}
@@ -194,17 +198,19 @@ export default function ActiveTripClient({ pool, currentTargetPassenger }: Props
                 <button 
                   type="submit" 
                   disabled={isPending}
-                  className="w-full bg-[#F59E0B] hover:bg-amber-600 text-white font-bold py-4 px-6 rounded-lg shadow-sm text-base transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50"
+                  className="w-full bg-[#F59E0B] hover:bg-[#D97706] text-white font-bold py-4 px-6 rounded-xl shadow-sm text-base transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  {isPending ? "Procesando..." : "📍 LLEGUÉ AL PUNTO DE RETIRO"}
+                  <span className="material-symbols-outlined">pin_drop</span>
+                  {isPending ? "Procesando..." : "LLEGUÉ AL PUNTO DE RETIRO"}
                 </button>
               ) : (
                 <button 
                   type="submit" 
                   disabled={isPending}
-                  className="w-full bg-[#0A192F] hover:bg-slate-800 text-white font-bold py-4 px-6 rounded-lg shadow-sm text-base transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50"
+                  className="w-full bg-[#0A192F] hover:bg-[#111827] text-white font-bold py-4 px-6 rounded-xl shadow-sm text-base transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  {isPending ? "Procesando..." : "✅ PASAJERO A BORDO → SIGUIENTE"}
+                  <span className="material-symbols-outlined">person_add</span>
+                  {isPending ? "Procesando..." : "PASAJERO A BORDO → SIGUIENTE"}
                 </button>
               )}
             </form>
@@ -218,9 +224,10 @@ export default function ActiveTripClient({ pool, currentTargetPassenger }: Props
                   <button 
                     type="submit" 
                     disabled={isPending}
-                    className="w-full bg-[#0A192F] hover:bg-slate-800 text-white font-bold py-4 px-6 rounded-lg shadow-sm text-base transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50"
+                    className="w-full bg-[#0A192F] hover:bg-[#111827] text-white font-bold py-4 px-6 rounded-xl shadow-sm text-base transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
                   >
-                    {isPending ? "Procesando..." : "🚐 IR A LA UBICACIÓN FINAL"}
+                    <span className="material-symbols-outlined">local_shipping</span>
+                    {isPending ? "Procesando..." : "IR A LA UBICACIÓN FINAL"}
                   </button>
                 </form>
               ) : (
@@ -229,9 +236,10 @@ export default function ActiveTripClient({ pool, currentTargetPassenger }: Props
                   <button 
                     type="submit" 
                     disabled={isPending}
-                    className="w-full bg-[#10B981] hover:bg-emerald-600 text-white font-bold py-4 px-6 rounded-lg shadow-sm text-base transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50"
+                    className="w-full bg-[#10B981] hover:bg-[#059669] text-white font-bold py-4 px-6 rounded-xl shadow-sm text-base transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
                   >
-                    {isPending ? "Procesando..." : "🏁 FINALIZAR RECORRIDO"}
+                    <span className="material-symbols-outlined">check_circle</span>
+                    {isPending ? "Procesando..." : "FINALIZAR RECORRIDO"}
                   </button>
                 </form>
               )}
@@ -241,65 +249,84 @@ export default function ActiveTripClient({ pool, currentTargetPassenger }: Props
 
         {/* 👤 TARJETA DEL PASAJERO OBJETIVO ACTUAL */}
         {pool.status === "IN_PROGRESS" && currentTargetPassenger ? (
-          <div className="bg-white border border-[#D8DADC] rounded-xl p-5 shadow-sm mb-6 animate-scale-in">
-            <div className="flex justify-between items-start mb-3">
-              <div>
-                <span className="text-[10px] bg-[#EFF6FF] text-[#0A192F] border border-blue-100 px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wide">Pasajero Activo</span>
-                <h2 className="text-xl font-bold text-[#0A192F] mt-1 flex items-center gap-2">
-                  {currentTargetPassenger.passenger_name}
-                  {currentTargetPassenger.rating !== undefined && currentTargetPassenger.rating !== null ? (
-                    <span className="text-xs bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-md font-bold flex items-center gap-0.5 shadow-sm">
-                      ★ {currentTargetPassenger.rating.toFixed(1)}
-                      {currentTargetPassenger.total_reviews !== undefined && currentTargetPassenger.total_reviews > 0 && (
-                        <span className="text-slate-400 font-normal">({currentTargetPassenger.total_reviews})</span>
-                      )}
-                    </span>
-                  ) : (
-                    <span className="text-xs bg-slate-100 text-slate-500 border border-slate-200 px-2 py-0.5 rounded-md font-bold flex items-center gap-0.5 shadow-sm">
-                      ★ --
-                    </span>
-                  )}
-                </h2>
+          <div className="bg-white border border-[#D8DADC] rounded-xl p-5 shadow-[0_1px_3px_0_rgba(0,0,0,0.05)] mb-6 animate-scale-in">
+            <div className="flex justify-between items-start mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center shrink-0">
+                  <span className="material-symbols-outlined text-xl">person</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">Pasajero Activo</span>
+                  <h2 className="text-lg font-bold text-[#0A192F] mt-0.5 flex items-center gap-1.5">
+                    {currentTargetPassenger.passenger_name}
+                    {currentTargetPassenger.rating !== undefined && currentTargetPassenger.rating !== null ? (
+                      <span className="text-xs bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-md font-bold flex items-center gap-0.5 shadow-sm">
+                        <span className="material-symbols-outlined text-xs text-amber-500 fill-[1]">star</span>
+                        {currentTargetPassenger.rating.toFixed(1)}
+                        {currentTargetPassenger.total_reviews !== undefined && currentTargetPassenger.total_reviews > 0 && (
+                          <span className="text-slate-400 font-normal">({currentTargetPassenger.total_reviews})</span>
+                        )}
+                      </span>
+                    ) : (
+                      <span className="text-xs bg-slate-50 text-slate-500 border border-slate-200 px-2 py-0.5 rounded-md font-bold flex items-center gap-0.5 shadow-sm">
+                        <span className="material-symbols-outlined text-xs text-slate-400">star</span>
+                        --
+                      </span>
+                    )}
+                  </h2>
+                </div>
               </div>
               <div className="text-right">
-                <span className="text-[10px] text-slate-400 block font-medium">Hito del Sistema</span>
-                <span className="text-xs font-bold text-[#0A192F]">{pool.hito === "El conductor está en camino a tu ubicación" ? "En Camino" : "En la Puerta"}</span>
+                <span className="text-[10px] text-slate-400 block font-medium uppercase tracking-wider">Estado</span>
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-100">
+                  {pool.hito === "El conductor está en camino a tu ubicación" ? "En Camino" : "En la Puerta"}
+                </span>
               </div>
             </div>
-            <div className="border-t border-[#D8DADC] pt-3 space-y-2 text-sm text-slate-700">
-              <p><strong>📍 Dirección:</strong> {currentTargetPassenger.pickup_address}</p>
-              <div className="text-xs bg-[#F7F9FB] p-2.5 rounded-lg border border-[#D8DADC] font-semibold text-slate-600 italic">
-                📢 Estado enviado al Pasajero: &quot;{pool.hito}&quot;
+            <div className="border-t border-[#D8DADC] pt-4 space-y-3 text-sm text-slate-700">
+              <div className="flex items-start gap-2 text-slate-600">
+                <span className="material-symbols-outlined text-lg text-slate-400 shrink-0 mt-0.5">location_on</span>
+                <div>
+                  <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">Dirección de Retiro</span>
+                  <p className="text-sm font-semibold text-slate-800">{currentTargetPassenger.pickup_address}</p>
+                </div>
+              </div>
+              <div className="text-xs bg-slate-50 p-3 rounded-lg border border-[#D8DADC] text-slate-600">
+                <div className="flex items-center gap-1.5 font-bold text-slate-500 uppercase tracking-wider text-[9px] mb-1">
+                  <span className="material-symbols-outlined text-xs">campaign</span>
+                  Estado enviado al Pasajero
+                </div>
+                &quot;{pool.hito}&quot;
               </div>
             </div>
           </div>
         ) : pool.status === "IN_PROGRESS" ? (
-          <div className="bg-[#ECFDF5] border border-[#10B981]/20 rounded-xl p-5 text-center shadow-sm mb-6 animate-scale-in">
+          <div className="bg-emerald-50 border border-[#10B981]/20 rounded-xl p-5 text-center shadow-[0_1px_3px_0_rgba(0,0,0,0.05)] mb-6 animate-scale-in">
             {pool.hito === "El conductor está en camino al destino final" ? (
               <>
                 <p className="font-bold text-[#047857] text-base">🚐 Rumbo al Destino Final</p>
-                <p className="text-xs text-[#047857] mt-1">
-                  Todos los pasajeros están a bordo. Dirígete hacia el parque industrial/puerto para finalizar la comisión.
+                <p className="text-xs text-[#047857]/80 mt-1">
+                  Todos los pasajeros están a bordo. Dirígete hacia el destino para finalizar la comisión.
                 </p>
               </>
             ) : (
               <>
                 <p className="font-bold text-[#047857] text-base">🙌 ¡Todos los pasajeros están arriba!</p>
-                <p className="text-xs text-[#047857] mt-1">Presiona el botón de arriba para iniciar el tramo al destino final.</p>
+                <p className="text-xs text-[#047857]/80 mt-1">Presiona el botón de arriba para iniciar el tramo al destino final.</p>
               </>
             )}
           </div>
         ) : pool.status === "COMPLETED" ? (
-          <div className="bg-emerald-50 border border-[#10B981]/20 rounded-xl p-6 text-center shadow-sm mb-6 animate-scale-in">
-            <span className="text-3xl block mb-2">🏁</span>
+          <div className="bg-emerald-50 border border-[#10B981]/20 rounded-xl p-6 text-center shadow-[0_1px_3px_0_rgba(0,0,0,0.05)] mb-6 animate-scale-in">
+            <span className="material-symbols-outlined text-4xl text-emerald-600 mb-2">sports_score</span>
             <p className="font-bold text-[#047857] text-lg">Viaje Completado con Éxito</p>
-            <p className="text-xs text-[#047857] mt-2">
+            <p className="text-xs text-[#047857]/80 mt-2">
               Los fondos han sido liquidados y se han habilitado las reseñas para los pasajeros.
             </p>
             <div className="mt-4 pt-4 border-t border-emerald-100 flex justify-center gap-2">
               <Link 
                 href="/driver/marketplace"
-                className="px-4 py-2 bg-[#0A192F] hover:bg-slate-800 text-white rounded-lg text-xs font-bold transition-all"
+                className="px-4 py-2 bg-[#0A192F] hover:bg-[#111827] text-white rounded-lg text-xs font-bold transition-all shadow-sm"
               >
                 Volver a Viajes Disponibles
               </Link>
@@ -308,10 +335,13 @@ export default function ActiveTripClient({ pool, currentTargetPassenger }: Props
         ) : null}
 
         {/* 📋 ITINERARIO COMPLETO (CHECKLIST DE SEGUIMIENTO) */}
-        <div className="bg-white border border-[#D8DADC] rounded-xl shadow-sm overflow-hidden">
-          <div className="p-4 bg-[#F7F9FB] border-b border-[#D8DADC] flex items-center justify-between">
-            <h3 className="font-bold text-sm text-[#0A192F]">Hoja de Ruta del Manifiesto</h3>
-            <span className="text-[10px] text-slate-400 bg-white px-2 py-0.5 border border-[#D8DADC] rounded-full font-bold">
+        <div className="bg-white border border-[#D8DADC] rounded-xl shadow-[0_1px_3px_0_rgba(0,0,0,0.05)] overflow-hidden">
+          <div className="p-4 bg-slate-50 border-b border-[#D8DADC] flex items-center justify-between">
+            <h3 className="font-bold text-sm text-[#0A192F] flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-lg">format_list_bulleted</span>
+              Hoja de Ruta del Manifiesto
+            </h3>
+            <span className="text-[10px] text-slate-500 bg-white px-2 py-0.5 border border-[#D8DADC] rounded-full font-bold shadow-sm">
               {pool.manifest_passengers.filter(p => p.passenger_status === "COMPLETED").length} / {pool.manifest_passengers.length} Pasajeros
             </span>
           </div>
@@ -326,16 +356,18 @@ export default function ActiveTripClient({ pool, currentTargetPassenger }: Props
                 const isPickedUp = p.passenger_status === "COMPLETED" || pool.status === "COMPLETED";
 
                 return (
-                  <div key={p.id} className={`p-3 flex items-center justify-between text-xs transition-colors ${isTarget ? 'bg-[#EFF6FF]/40 font-medium' : ''}`}>
+                  <div key={p.id} className={`p-4 flex items-center justify-between text-xs transition-colors ${isTarget ? 'bg-[#EFF6FF]/30 font-medium' : ''}`}>
                     <div className="flex items-center gap-3">
-                      <span className={`w-5 h-5 rounded-full flex items-center justify-center font-mono text-[10px] font-bold border ${
-                        isPickedUp ? 'bg-[#ECFDF5] text-[#10B981] border-[#10B981]/20' :
-                        isTarget ? 'bg-[#0A192F] text-white border-[#0A192F]' : 'bg-gray-100 text-gray-400 border-gray-200'
+                      <span className={`w-6 h-6 rounded-full flex items-center justify-center font-mono text-xs font-bold border transition-colors shrink-0 ${
+                        isPickedUp ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
+                        isTarget ? 'bg-[#0A192F] text-white border-[#0A192F]' : 'bg-slate-100 text-slate-400 border-slate-200'
                       }`}>
-                        {isPickedUp ? "✓" : index + 1}
+                        {isPickedUp ? (
+                          <span className="material-symbols-outlined text-sm font-bold">check</span>
+                        ) : index + 1}
                       </span>
                       <div>
-                        <p className={`${isPickedUp ? "line-through text-slate-400" : "text-slate-800 font-medium"} flex items-center gap-1.5`}>
+                        <p className={`${isPickedUp ? "line-through text-slate-400" : "text-slate-800 font-semibold"} flex items-center gap-1.5`}>
                           {p.passenger_name}
                           {p.rating !== undefined && p.rating !== null ? (
                             <span className="text-[9px] bg-amber-50 text-amber-700 border border-amber-200 px-1 py-0.2 rounded-md font-extrabold flex items-center gap-0.5 shadow-sm">
@@ -350,16 +382,19 @@ export default function ActiveTripClient({ pool, currentTargetPassenger }: Props
                             </span>
                           )}
                         </p>
-                        <p className="text-[10px] text-slate-400 truncate max-w-[280px]">{p.pickup_address}</p>
+                        <p className="text-[10px] text-slate-400 mt-0.5 flex items-center gap-1">
+                          <span className="material-symbols-outlined text-xs">pin_drop</span>
+                          {p.pickup_address}
+                        </p>
                       </div>
                     </div>
                     {isTarget && (
-                      <span className="text-[9px] bg-[#0A192F] text-white px-2 py-0.5 rounded-md uppercase font-bold tracking-tight shadow-sm">
+                      <span className="text-[9px] bg-[#0A192F] text-white px-2.5 py-1 rounded-md uppercase font-bold tracking-tight shadow-sm">
                         Actual
                       </span>
                     )}
                     {isPickedUp && (
-                      <span className="text-[9px] text-[#10B981] font-bold">
+                      <span className="inline-flex items-center gap-0.5 text-[9px] bg-emerald-50 text-emerald-700 border border-emerald-100 px-2 py-0.5 rounded-full font-bold">
                         A bordo
                       </span>
                     )}

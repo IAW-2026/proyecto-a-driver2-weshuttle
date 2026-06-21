@@ -2,6 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import prisma from "@/lib/prisma";
+import TopNavBar from "@/app/components/TopNavBar";
 
 export const metadata = {
   title: "Historial de Viajes Global | WeShuttle Admin",
@@ -35,28 +36,46 @@ export default async function AdminHistoryPage() {
   });
 
   return (
-    <div className="min-h-screen bg-[#F7F9FB] py-10 px-4 sm:px-6 font-sans text-slate-700">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-[#F7F9FB] font-sans text-slate-700">
+      <TopNavBar backUrl="/" backLabel="Menú Principal" />
+
+      <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6">
         
-        {/* Encabezado */}
-        <header className="mb-8">
-          <Link 
-            href="/" 
-            className="text-xs font-semibold text-[#0A192F] hover:text-slate-700 uppercase tracking-wider flex items-center gap-1 transition-colors"
-          >
-            &larr; Volver al Panel de Control
-          </Link>
-          <h1 className="text-3xl font-extrabold text-[#0A192F] mt-3">Historial de Viajes Global</h1>
-          <p className="text-sm text-[#4B5563] mt-1">
-            Panel de auditoría histórica. Visualiza todas las comisiones de pools finalizadas en la plataforma.
-          </p>
-        </header>
+        {/* Quick Navigation sub-bar */}
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-[#0A192F]">Historial de Viajes Global</h1>
+            <p className="text-xs text-[#4B5563] mt-1">
+              Panel de auditoría histórica. Visualiza todas las comisiones de pools finalizadas.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/admin/dashboard"
+              className="text-xs font-semibold text-slate-600 hover:text-[#0A192F] bg-white hover:bg-slate-50 border border-[#D8DADC] px-3.5 py-2 rounded-lg transition-all shadow-sm flex items-center gap-1.5 uppercase tracking-wider"
+            >
+              <span className="material-symbols-outlined text-sm">badge</span>
+              Conductores
+            </Link>
+            <Link
+              href="/admin/vehicles"
+              className="text-xs font-semibold text-slate-600 hover:text-[#0A192F] bg-white hover:bg-slate-50 border border-[#D8DADC] px-3.5 py-2 rounded-lg transition-all shadow-sm flex items-center gap-1.5 uppercase tracking-wider"
+            >
+              <span className="material-symbols-outlined text-sm">directions_car</span>
+              Vehículos
+            </Link>
+            <span className="text-xs font-bold text-[#0A192F] bg-blue-50 border border-blue-200 px-3.5 py-2 rounded-lg shadow-sm flex items-center gap-1.5 uppercase tracking-wider">
+              <span className="material-symbols-outlined text-sm font-bold">history</span>
+              Historial Global
+            </span>
+          </div>
+        </div>
 
         {/* Listado de Viajes */}
         <div className="space-y-6">
           {pools.length === 0 ? (
             <div className="bg-white border border-[#D8DADC] p-10 rounded-2xl text-center text-slate-500 italic shadow-sm">
-              <span className="text-3xl block mb-2">📭</span>
+              <span className="material-symbols-outlined text-4xl text-slate-300 mb-2">inbox</span>
               No hay viajes completados registrados en la plataforma.
             </div>
           ) : (
@@ -71,21 +90,29 @@ export default async function AdminHistoryPage() {
               return (
                 <div 
                   key={pool.id}
-                  className="bg-white border border-[#D8DADC] rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200"
+                  className="bg-white border border-[#D8DADC] rounded-xl overflow-hidden shadow-[0_1px_3px_0_rgba(0,0,0,0.05)] hover:shadow-md transition-all duration-200"
                 >
                   {/* Encabezado del viaje */}
-                  <div className="bg-[#0A192F] text-white p-4 sm:p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                  <div className="border-b border-[#D8DADC] p-4 sm:p-5 bg-slate-50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                     <div>
-                      <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-300 bg-emerald-950/60 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
-                        Viaje Auditado
+                      <span className="inline-flex items-center gap-1 text-[10px] uppercase font-bold tracking-wider text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
+                        <span className="material-symbols-outlined text-xs font-bold">check_circle</span>
+                        Completado
                       </span>
-                      <h2 className="text-xl font-bold mt-1.5">
+                      <h2 className="text-lg font-bold text-[#0A192F] mt-1.5 flex items-center gap-2">
+                        <span className="material-symbols-outlined text-slate-400">flag</span>
                         {pool.destination_id.replace("dest_", "").replace("_", " ").toUpperCase()}
                       </h2>
                     </div>
                     <div className="text-left sm:text-right">
-                      <p className="text-xs text-blue-200 capitalize font-medium">{dateStr}</p>
-                      <p className="text-sm font-bold text-white mt-0.5">{timeStr} hs</p>
+                      <p className="text-xs text-slate-500 capitalize font-medium flex items-center gap-1 sm:justify-end">
+                        <span className="material-symbols-outlined text-xs text-slate-400">calendar_month</span>
+                        {dateStr}
+                      </p>
+                      <p className="text-sm font-bold text-[#0A192F] mt-0.5 flex items-center gap-1 sm:justify-end">
+                        <span className="material-symbols-outlined text-xs text-slate-400">schedule</span>
+                        {timeStr} hs
+                      </p>
                     </div>
                   </div>
 
@@ -95,49 +122,84 @@ export default async function AdminHistoryPage() {
                       
                       {/* Datos del Conductor */}
                       <div className="space-y-2">
-                        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Conductor Asignado</h3>
+                        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                          <span className="material-symbols-outlined text-sm">badge</span>
+                          Conductor Asignado
+                        </h3>
                         {pool.driver ? (
-                          <div className="bg-slate-50 border border-[#D8DADC] p-3 rounded-xl space-y-1">
-                            <p className="text-sm font-semibold text-slate-800">{pool.driver.full_name?.split(" (")[0]}</p>
-                            <p className="text-xs text-slate-500">ID Clerk: <code className="bg-white px-1.5 py-0.5 border rounded">{pool.driver.clerk_user_id}</code></p>
-                            {pool.driver.phone && <p className="text-xs text-slate-500">Tel: {pool.driver.phone}</p>}
+                          <div className="bg-slate-50 border border-[#D8DADC] p-3.5 rounded-xl space-y-1.5">
+                            <p className="text-sm font-semibold text-slate-800 flex items-center gap-1.5">
+                              <span className="material-symbols-outlined text-sm text-slate-500">person</span>
+                              {pool.driver.full_name?.split(" (")[0]}
+                            </p>
+                            <p className="text-xs text-slate-500 flex items-center gap-1">
+                              <span className="material-symbols-outlined text-xs text-slate-400">fingerprint</span>
+                              ID: <code className="font-mono bg-white px-1.5 py-0.5 border rounded text-slate-600">{pool.driver.clerk_user_id.substring(0, 15)}...</code>
+                            </p>
+                            {pool.driver.phone && (
+                              <p className="text-xs text-slate-500 flex items-center gap-1">
+                                <span className="material-symbols-outlined text-xs text-slate-400">phone</span>
+                                {pool.driver.phone}
+                              </p>
+                            )}
                           </div>
                         ) : (
-                          <p className="text-sm text-red-500 italic">Sin conductor asignado (o eliminado)</p>
+                          <p className="text-sm text-red-500 italic flex items-center gap-1">
+                            <span className="material-symbols-outlined text-sm">warning</span>
+                            Sin conductor asignado (o eliminado)
+                          </p>
                         )}
                       </div>
 
                       {/* Datos Generales y Vehículo */}
                       <div className="space-y-2">
-                        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Datos del Servicio</h3>
-                        <p className="text-sm text-slate-600">
-                          <strong>ID del Pool:</strong> <span className="font-mono text-xs bg-slate-50 px-1.5 py-0.5 rounded border">{pool.id}</span>
-                        </p>
-                        <p className="text-sm text-slate-600">
-                          <strong>Pasajeros Registrados:</strong> <span className="font-semibold text-slate-800">{pool.current_passengers} / {pool.max_capacity}</span>
-                        </p>
-                        {pool.vehicle && (
-                          <p className="text-sm text-slate-600">
-                            <strong>Vehículo:</strong> {pool.vehicle.brand} {pool.vehicle.model} <span className="font-mono text-xs bg-slate-50 px-1.5 py-0.5 rounded border ml-1 uppercase">{pool.vehicle.license_plate}</span>
+                        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                          <span className="material-symbols-outlined text-sm">info</span>
+                          Datos del Servicio
+                        </h3>
+                        <div className="bg-slate-50 border border-[#D8DADC] p-3.5 rounded-xl space-y-1.5 text-sm text-slate-600">
+                          <p className="flex items-center justify-between">
+                            <span>ID del Pool:</span>
+                            <span className="font-mono text-xs bg-white px-1.5 py-0.5 rounded border text-slate-500">{pool.id.substring(0, 10)}...</span>
                           </p>
-                        )}
+                          <p className="flex items-center justify-between">
+                            <span>Pasajeros:</span>
+                            <span className="font-semibold text-slate-800 flex items-center gap-1">
+                              <span className="material-symbols-outlined text-base text-slate-400">group</span>
+                              {pool.current_passengers} / {pool.max_capacity}
+                            </span>
+                          </p>
+                          {pool.vehicle && (
+                            <p className="flex items-center justify-between gap-2">
+                              <span>Vehículo:</span>
+                              <span className="font-semibold text-slate-800 flex items-center gap-1 truncate max-w-[180px]">
+                                <span className="material-symbols-outlined text-base text-slate-400 shrink-0">directions_car</span>
+                                {pool.vehicle.brand} {pool.vehicle.model}
+                                <span className="font-mono text-[10px] bg-white px-1.5 py-0.5 border rounded uppercase shrink-0 font-bold ml-1 text-slate-500">{pool.vehicle.license_plate}</span>
+                              </span>
+                            </p>
+                          )}
+                        </div>
                       </div>
 
                     </div>
 
                     {/* Manifiesto de Pasajeros */}
                     <div className="border-t border-[#D8DADC] pt-4">
-                      <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Manifiesto de Pasajeros Cobrados</h3>
+                      <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+                        <span className="material-symbols-outlined text-sm">group</span>
+                        Manifiesto de Pasajeros Cobrados
+                      </h3>
                       {pool.manifest_passengers.length === 0 ? (
                         <p className="text-xs text-slate-400 italic">No hay registros de pasajeros para este viaje.</p>
                       ) : (
-                        <div className="bg-[#F7F9FB] border border-[#D8DADC] rounded-xl p-3 flex flex-wrap gap-2">
+                        <div className="bg-slate-50 border border-[#D8DADC] rounded-xl p-3 flex flex-wrap gap-2">
                           {pool.manifest_passengers.map((p) => (
                             <span 
                               key={p.id}
-                              className="inline-flex items-center gap-1 bg-white border border-[#D8DADC] px-2.5 py-1 rounded-lg text-xs text-slate-700 shadow-sm"
+                              className="inline-flex items-center gap-1.5 bg-white border border-[#D8DADC] px-3 py-1 rounded-lg text-xs font-semibold text-slate-700 shadow-sm"
                             >
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                              <span className="material-symbols-outlined text-xs text-emerald-500 font-bold">check</span>
                               {p.passenger_name}
                             </span>
                           ))}

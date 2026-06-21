@@ -72,157 +72,266 @@ export default async function HomePage() {
   // Cargar notificaciones para el conductor
   const notifications = hasAccess
     ? await prisma.notification.findMany({
-        where: {
-          driver_user_id: userId,
-          read: false,
-        },
-        orderBy: {
-          createdAt: "desc",
-        },
-      })
+      where: {
+        driver_user_id: userId,
+        read: false,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    })
     : [];
 
   return (
-    <div className="p-8 min-h-screen bg-[#F7F9FB]">
-      {/* Encabezado Principal */}
-      <header className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-[#0A192F]">WeShuttle - Conductores</h1>
-        <div className="flex items-center gap-4">
-          {hasAccess && (
-            <NotificationsDropdown
-              initialNotifications={notifications.map((n) => ({
-                id: n.id,
-                pool_id: n.pool_id,
-                message: n.message,
-              }))}
-              feedbackAppUrl={feedbackAppUrl}
+    <div className="p-8 min-h-screen bg-[#F7F9FB] font-sans">
+      <div className="max-w-4xl mx-auto w-full">
+        {/* Encabezado Principal */}
+        <header className="flex justify-between items-center mb-8">
+          <div className="flex items-center gap-3">
+            <img
+              src="/logo-ws-recortado.jpeg"
+              alt="WeShuttle Logo"
+              className="h-14 w-14 object-contain rounded-lg shadow-sm"
             />
-          )}
-          <UserButton />
-        </div>
-      </header>
-
-      <main>
-        {/* Banner de Bienvenida Premium */}
-        <div className="bg-gradient-to-r from-[#0A192F] to-[#1B365D] text-white p-6 sm:p-8 rounded-2xl shadow-md mb-8 relative overflow-hidden">
-          <div className="flex flex-col gap-1.5 relative z-10">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-blue-300 bg-blue-900/50 px-2.5 py-0.5 rounded-full border border-blue-500/20 w-fit">
-              {isAdmin ? "Panel de Control Global" : "Conductor Verificado"}
-            </span>
-            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight mt-1">
-              ¡Bienvenido/a, <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-indigo-100">{displayName}</span>! 👋
-            </h2>
-            <p className="text-blue-100/80 text-xs sm:text-sm max-w-lg mt-1 font-medium leading-relaxed">
-              {isAdmin
-                ? "Supervisa el estado global, audita conductores y analiza el rendimiento histórico de las comisiones."
-                : "Gestiona tus vehículos autorizados, acepta nuevas comisiones en el marketplace y controla tus viajes asignados."}
-            </p>
+            <h1 className="text-3xl font-extrabold text-[#0A192F] tracking-tight">WeShuttle</h1>
           </div>
-        </div>
-
-        {/* Cuadrícula de Accesos Autorizados */}
-        {hasAccess && (
-          <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl">
-
-            {/* 1. Viajes Disponibles (Común para Driver y Admin) */}
-            <Link
-              href="/driver/marketplace"
-              className="bg-white p-6 rounded-xl shadow-sm border border-[#D8DADC] hover:border-[#0A192F] hover:shadow-md transition-all group"
-            >
-              <h3 className="text-xl font-semibold text-[#0A192F] mb-2 group-hover:text-blue-600">Viajes Disponibles &rarr;</h3>
-              <p className="text-sm text-gray-500">Busca y acepta nuevos pools disponibles para conducir.</p>
-            </Link>
-
-            {/* 2. Vehículos Registrados (EXCLUSIVO para Rol Admin) */}
-            {isAdmin && (
-              <Link
-                href="/admin/vehicles"
-                className="bg-white p-6 rounded-xl shadow-sm border border-[#D8DADC] hover:border-[#0A192F] hover:shadow-md transition-all group"
-              >
-                <h3 className="text-xl font-semibold text-[#0A192F] mb-2 group-hover:text-blue-600">🚗 Vehículos Registrados &rarr;</h3>
-                <p className="text-sm text-gray-500">Visualiza todos los vehículos de la plataforma, patentes y sus conductores.</p>
-              </Link>
+          <div className="flex items-center gap-4">
+            {hasAccess && (
+              <NotificationsDropdown
+                initialNotifications={notifications.map((n) => ({
+                  id: n.id,
+                  pool_id: n.pool_id,
+                  message: n.message,
+                }))}
+                feedbackAppUrl={feedbackAppUrl}
+              />
             )}
+            <UserButton />
+          </div>
+        </header>
 
-            {/* Historial de Viajes Admin (EXCLUSIVO para Rol Admin) */}
-            {isAdmin && (
+        <main>
+          {/* Banner de Bienvenida Premium */}
+          <div className="bg-[#0A192F] text-white p-8 sm:p-10 rounded-2xl shadow-md mb-8 relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-r from-[#0A192F] to-[#1B365D] opacity-60" />
+            <div className="flex flex-col gap-1.5 relative z-10">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-300 bg-emerald-950/60 px-3 py-1 rounded-full border border-emerald-500/20 w-fit flex items-center gap-1.5 shadow-sm">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                {isAdmin ? "Panel de Control Global" : "Conductor Verificado"}
+              </span>
+              <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight mt-3 text-white leading-tight">
+                ¡Bienvenido/a, <span className="text-blue-300 font-bold">{displayName}</span>! 👋
+              </h2>
+              <p className="text-slate-200/90 text-sm sm:text-base max-w-2xl mt-3 font-medium leading-relaxed">
+                Una plataforma inteligente para gestionar vehiculos, tomar viajes y seguir recorridos de manera segura y eficiente.
+              </p>
+            </div>
+          </div>
+
+          {/* Cuadrícula de Accesos Autorizados */}
+          {hasAccess && (
+            <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+
+              {/* 1. Viajes Disponibles (Común para Driver y Admin) */}
               <Link
-                href="/admin/history"
-                className="bg-white p-6 rounded-xl shadow-sm border border-[#D8DADC] hover:border-[#0A192F] hover:shadow-md transition-all group"
+                href="/driver/marketplace"
+                className="bg-white p-6 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.05)] border border-[#D8DADC] hover:border-[#0A192F] hover:shadow-md transition-all group flex flex-col justify-between"
               >
-                <h3 className="text-xl font-semibold text-[#0A192F] mb-2 group-hover:text-blue-600">📜 Historial de Viajes &rarr;</h3>
-                <p className="text-sm text-gray-500">Visualiza el registro histórico de todos los viajes completados en la plataforma.</p>
+                <div>
+                  <div className="h-10 w-10 rounded-lg flex items-center justify-center bg-blue-50 text-blue-600 shadow-sm">
+                    <span className="material-symbols-outlined text-xl">local_shipping</span>
+                  </div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mt-4 block">Marketplace</span>
+                  <h3 className="text-lg font-bold text-[#0A192F] mt-1 group-hover:text-blue-600 flex items-center justify-between">
+                    Viajes Disponibles
+                    <span className="text-slate-300 group-hover:translate-x-1 transition-transform">&rarr;</span>
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
+                    Busca y acepta nuevos pools disponibles para conducir.
+                  </p>
+                </div>
               </Link>
-            )}
 
-            {/* 3. Panel de Administración Obligatorio (EXCLUSIVO para Rol Admin) */}
-            {isAdmin && (
-              <Link
-                href="/admin/dashboard"
-                className="bg-[#EFF6FF] p-6 rounded-xl shadow-sm border border-[#D8DADC] hover:border-[#0A192F] hover:shadow-md transition-all group col-span-1 md:col-span-2 mt-2"
-              >
-                <h3 className="text-xl font-semibold text-[#0A192F] mb-2 group-hover:text-blue-700">⚙️ Panel de Gestión de Administración &rarr;</h3>
-                <p className="text-sm text-slate-600">
-                  Control total de datos maestros (conductores y vehículos), auditorías operativas y visualización de reportes analíticos del negocio.
-                </p>
-              </Link>
-            )}
-
-            { //Mostrar mis vehiculos y mis viajes solo para el driver
-              isDriver && (
-                <>
-                  <Link
-                    href="/driver/vehicles"
-                    className="bg-white p-6 rounded-xl shadow-sm border border-[#D8DADC] hover:border-[#0A192F] hover:shadow-md transition-all group"
-                  >
-                    <h3 className="text-xl font-semibold text-[#0A192F] mb-2 group-hover:text-blue-600">🚗 Mis Vehículos &rarr;</h3>
-                    <p className="text-sm text-gray-500">Gestiona los vehículos registrados en tu cuenta.</p>
-                  </Link>
-                  <Link
-                    href="/driver/my-trips"
-                    className="bg-white p-6 rounded-xl shadow-sm border border-[#D8DADC] hover:border-[#0A192F] hover:shadow-md transition-all group"
-                  >
-                    <h3 className="text-xl font-semibold text-[#0A192F] mb-2 group-hover:text-blue-600">Mis Viajes &rarr;</h3>
-                    <p className="text-sm text-gray-500">Consulta y gestiona tus recorridos asignados.</p>
-                  </Link>
-                  <Link
-                    href="/driver/history"
-                    className="bg-white p-6 rounded-xl shadow-sm border border-[#D8DADC] hover:border-[#0A192F] hover:shadow-md transition-all group"
-                  >
-                    <h3 className="text-xl font-semibold text-[#0A192F] mb-2 group-hover:text-blue-600">📜 Historial de Viajes &rarr;</h3>
-                    <p className="text-sm text-gray-500">Revisa tu historial de viajes completados y cobros liquidados.</p>
-                  </Link>
-                  <a
-                    href={paymentsAppUrl}
-                    className="bg-[#ECFDF5] p-6 rounded-xl shadow-sm border border-[#A7F3D0] hover:border-[#10B981] hover:shadow-md transition-all group"
-                  >
-                    <h3 className="text-xl font-semibold text-[#047857] mb-2 group-hover:text-emerald-700">💵 Ver Cobros y Finanzas &rarr;</h3>
-                    <p className="text-sm text-[#065F46]">Consulta tus liquidaciones, saldos y cobros en la Payments App.</p>
-                  </a>
-                  <a
-                    href={feedbackAppUrl}
-                    className="bg-[#FEF3C7] p-6 rounded-xl shadow-sm border border-[#FDE68A] hover:border-[#D97706] hover:shadow-md transition-all group"
-                  >
-                    <h3 className="text-xl font-semibold text-[#D97706] mb-2 group-hover:text-[#B45309]">⭐ Calificar Pasajeros &rarr;</h3>
-                    <p className="text-sm text-amber-800">Califica a los pasajeros de tus viajes en la Feedback App.</p>
-                  </a>
-                </>
+              {/* 2. Vehículos Registrados (EXCLUSIVO para Rol Admin) */}
+              {isAdmin && (
+                <Link
+                  href="/admin/vehicles"
+                  className="bg-white p-6 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.05)] border border-[#D8DADC] hover:border-[#0A192F] hover:shadow-md transition-all group flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="h-10 w-10 rounded-lg flex items-center justify-center bg-emerald-50 text-emerald-600 shadow-sm">
+                      <span className="material-symbols-outlined text-xl">airport_shuttle</span>
+                    </div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mt-4 block">Administración</span>
+                    <h3 className="text-lg font-bold text-[#0A192F] mt-1 group-hover:text-blue-600 flex items-center justify-between">
+                      Vehículos Registrados
+                      <span className="text-slate-300 group-hover:translate-x-1 transition-transform">&rarr;</span>
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
+                      Visualiza todos los vehículos de la plataforma, patentes y sus conductores.
+                    </p>
+                  </div>
+                </Link>
               )}
 
+              {/* Historial de Viajes Admin (EXCLUSIVO para Rol Admin) */}
+              {isAdmin && (
+                <Link
+                  href="/admin/history"
+                  className="bg-white p-6 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.05)] border border-[#D8DADC] hover:border-[#0A192F] hover:shadow-md transition-all group flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="h-10 w-10 rounded-lg flex items-center justify-center bg-rose-50 text-rose-600 shadow-sm">
+                      <span className="material-symbols-outlined text-xl">receipt_long</span>
+                    </div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mt-4 block">Auditoría</span>
+                    <h3 className="text-lg font-bold text-[#0A192F] mt-1 group-hover:text-blue-600 flex items-center justify-between">
+                      Historial de Viajes
+                      <span className="text-slate-300 group-hover:translate-x-1 transition-transform">&rarr;</span>
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
+                      Visualiza el registro histórico de todos los viajes completados en la plataforma.
+                    </p>
+                  </div>
+                </Link>
+              )}
 
-          </div>
-        )}
+              {/* 3. Panel de Administración Obligatorio (EXCLUSIVO para Rol Admin) */}
+              {isAdmin && (
+                <Link
+                  href="/admin/dashboard"
+                  className="bg-white p-6 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.05)] border border-[#D8DADC] hover:border-[#0A192F] hover:shadow-md transition-all group col-span-1 md:col-span-2 flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="h-10 w-10 rounded-lg flex items-center justify-center bg-purple-50 text-purple-600 shadow-sm">
+                      <span className="material-symbols-outlined text-xl">settings</span>
+                    </div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mt-4 block">Administración</span>
+                    <h3 className="text-lg font-bold text-[#0A192F] mt-1 group-hover:text-blue-700 flex items-center justify-between">
+                      Panel de Gestión de Administración
+                      <span className="text-slate-300 group-hover:translate-x-1 transition-transform">&rarr;</span>
+                    </h3>
+                    <p className="text-xs text-slate-600 mt-1.5 leading-relaxed">
+                      Control total de datos maestros (conductores y vehículos), auditorías operativas y visualización de reportes analíticos del negocio.
+                    </p>
+                  </div>
+                </Link>
+              )}
 
-        {/* Control de Bloqueo para Usuarios sin Rol Asignado */}
-        {!hasAccess && (
-          <div className="mt-8 p-6 bg-yellow-50 rounded-lg shadow-sm border border-yellow-200 max-w-lg">
-            <p className="text-yellow-800 text-sm font-medium">
-              ⚠️ Tu cuenta no tiene asignado un rol operativo autorizado. Contacta a soporte para verificar tu estado en Clerk.
-            </p>
-          </div>
-        )}
+              { //Mostrar mis vehiculos y mis viajes solo para el driver
+                isDriver && (
+                  <>
+                    <Link
+                      href="/driver/vehicles"
+                      className="bg-white p-6 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.05)] border border-[#D8DADC] hover:border-[#0A192F] hover:shadow-md transition-all group flex flex-col justify-between"
+                    >
+                      <div>
+                        <div className="h-10 w-10 rounded-lg flex items-center justify-center bg-blue-50 text-blue-600 shadow-sm">
+                          <span className="material-symbols-outlined text-xl">directions_car</span>
+                        </div>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mt-4 block">Conductor</span>
+                        <h3 className="text-lg font-bold text-[#0A192F] mt-1 group-hover:text-blue-600 flex items-center justify-between">
+                          Mis Vehículos
+                          <span className="text-slate-300 group-hover:translate-x-1 transition-transform">&rarr;</span>
+                        </h3>
+                        <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
+                          Gestiona los vehículos registrados en tu cuenta.
+                        </p>
+                      </div>
+                    </Link>
 
-      </main>
+                    <Link
+                      href="/driver/my-trips"
+                      className="bg-white p-6 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.05)] border border-[#D8DADC] hover:border-[#0A192F] hover:shadow-md transition-all group flex flex-col justify-between"
+                    >
+                      <div>
+                        <div className="h-10 w-10 rounded-lg flex items-center justify-center bg-emerald-50 text-emerald-600 shadow-sm">
+                          <span className="material-symbols-outlined text-xl">navigation</span>
+                        </div>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mt-4 block">Conductor</span>
+                        <h3 className="text-lg font-bold text-[#0A192F] mt-1 group-hover:text-blue-600 flex items-center justify-between">
+                          Mis Viajes
+                          <span className="text-slate-300 group-hover:translate-x-1 transition-transform">&rarr;</span>
+                        </h3>
+                        <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
+                          Consulta y gestiona tus recorridos asignados.
+                        </p>
+                      </div>
+                    </Link>
+
+                    <Link
+                      href="/driver/history"
+                      className="bg-white p-6 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.05)] border border-[#D8DADC] hover:border-[#0A192F] hover:shadow-md transition-all group flex flex-col justify-between"
+                    >
+                      <div>
+                        <div className="h-10 w-10 rounded-lg flex items-center justify-center bg-rose-50 text-rose-600 shadow-sm">
+                          <span className="material-symbols-outlined text-xl">history</span>
+                        </div>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mt-4 block">Historial</span>
+                        <h3 className="text-lg font-bold text-[#0A192F] mt-1 group-hover:text-blue-600 flex items-center justify-between">
+                          Historial de Viajes
+                          <span className="text-slate-300 group-hover:translate-x-1 transition-transform">&rarr;</span>
+                        </h3>
+                        <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
+                          Revisa tu historial de viajes completados y cobros liquidados.
+                        </p>
+                      </div>
+                    </Link>
+
+                    <a
+                      href={paymentsAppUrl}
+                      className="bg-white p-6 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.05)] border border-[#D8DADC] hover:border-[#0A192F] hover:shadow-md transition-all group flex flex-col justify-between"
+                    >
+                      <div>
+                        <div className="h-10 w-10 rounded-lg flex items-center justify-center bg-emerald-50 text-emerald-600 shadow-sm">
+                          <span className="material-symbols-outlined text-xl">payments</span>
+                        </div>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mt-4 block">Finanzas</span>
+                        <h3 className="text-lg font-bold text-[#0A192F] group-hover:text-emerald-700 flex items-center justify-between">
+                          Ver Cobros y Finanzas
+                          <span className="text-slate-300 group-hover:translate-x-1 transition-transform">&rarr;</span>
+                        </h3>
+                        <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
+                          Consulta tus liquidaciones, saldos y cobros en la Payments App.
+                        </p>
+                      </div>
+                    </a>
+
+                    <a
+                      href={feedbackAppUrl}
+                      className="bg-white p-6 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.05)] border border-[#D8DADC] hover:border-[#0A192F] hover:shadow-md transition-all group flex flex-col justify-between"
+                    >
+                      <div>
+                        <div className="h-10 w-10 rounded-lg flex items-center justify-center bg-amber-50 text-amber-600 shadow-sm">
+                          <span className="material-symbols-outlined text-xl">star</span>
+                        </div>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mt-4 block">Feedback</span>
+                        <h3 className="text-lg font-bold text-[#0A192F] group-hover:text-[#B45309] flex items-center justify-between">
+                          Calificar Pasajeros
+                          <span className="text-slate-300 group-hover:translate-x-1 transition-transform">&rarr;</span>
+                        </h3>
+                        <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
+                          Califica a los pasajeros de tus viajes en la Feedback App.
+                        </p>
+                      </div>
+                    </a>
+                  </>
+                )}
+
+            </div>
+          )}
+
+          {/* Control de Bloqueo para Usuarios sin Rol Asignado */}
+          {!hasAccess && (
+            <div className="mt-8 p-6 bg-yellow-50 rounded-lg shadow-sm border border-yellow-200 max-w-lg">
+              <p className="text-yellow-800 text-sm font-medium">
+                ⚠️ Tu cuenta no tiene asignado un rol operativo autorizado. Contacta a soporte para verificar tu estado en Clerk.
+              </p>
+            </div>
+          )}
+
+        </main>
+      </div>
     </div>
   );
 }
