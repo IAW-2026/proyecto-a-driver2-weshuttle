@@ -1,6 +1,6 @@
 'use client';
 
-import { useTransition, useState } from "react";
+import { useTransition, useState, useEffect } from "react";
 import { acceptPool } from "@/app/actions";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -60,6 +60,14 @@ export default function MarketplaceClient({
   const [isPending, startTransition] = useTransition();
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [expandedPools, setExpandedPools] = useState<Set<string>>(new Set());
+
+  // Periodic background refresh for real-time updates (creations, joins, cancellations)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      router.refresh();
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [router]);
 
   const toggleExpand = (poolId: string) => {
     setExpandedPools((prev) => {

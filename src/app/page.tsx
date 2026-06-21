@@ -14,8 +14,8 @@ export default async function HomePage() {
     redirect("/sign-in");
   }
 
-  const feedbackAppUrl = process.env.NEXT_PUBLIC_FEEDBACK_APP_URL || "http://localhost:3002";
-  const paymentsAppUrl = process.env.NEXT_PUBLIC_PAYMENTS_APP_URL || "http://localhost:3003";
+  const feedbackAppUrl = process.env.NEXT_PUBLIC_FEEDBACK_APP_URL || "https://proyecto-a-feedback-weshuttle.vercel.app";
+  const paymentsAppUrl = process.env.NEXT_PUBLIC_PAYMENTS_APP_URL || "https://proyecto-a-payments-weshuttle.vercel.app";
 
   // Extraemos el rol mapeado desde los Custom Claims de Clerk
   let role = (sessionClaims?.role as string) || null;

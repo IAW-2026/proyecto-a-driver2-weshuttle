@@ -1,6 +1,6 @@
 'use client';
 
-import { useTransition, useState } from "react";
+import { useTransition, useState, useEffect } from "react";
 import { startJourneyFromList } from "@/app/actions";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -25,6 +25,14 @@ export default function MyTripsClient({ pools }: { pools: Pool[] }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [toasts, setToasts] = useState<Toast[]>([]);
+
+  // Periodic background refresh for real-time updates (cancellations/joins info)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      router.refresh();
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [router]);
 
   const addToast = (message: string, type: "success" | "error" | "info" = "success") => {
     const id = Math.random().toString(36).substring(2, 9);
