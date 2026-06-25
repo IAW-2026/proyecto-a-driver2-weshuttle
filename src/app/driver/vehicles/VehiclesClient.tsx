@@ -3,6 +3,7 @@
 import { useTransition, useState, useRef } from "react";
 import { registerVehicle, editVehicle, deleteVehicle } from "@/app/actions";
 import Link from "next/link";
+import Toast from "@/app/components/Toast";
 
 interface Vehicle {
   id: string;
@@ -421,25 +422,16 @@ export default function VehiclesClient({ initialVehicles }: { initialVehicles: V
       )}
 
       {/* TOAST SYSTEM */}
-      <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-3 pointer-events-none max-w-sm w-full">
+      <div className="fixed bottom-8 right-8 z-[120] flex flex-col gap-3 pointer-events-none max-w-sm w-full">
         {toasts.map((toast) => (
-          <div
+          <Toast
             key={toast.id}
-            className={`pointer-events-auto flex items-center gap-3 px-4 py-3.5 rounded-lg shadow-lg text-white font-medium text-sm border animate-slide-in-right ${
-              toast.type === "success" 
-                ? "bg-[#10B981] border-emerald-400" 
-                : toast.type === "error"
-                ? "bg-[#EF4444] border-red-400"
-                : "bg-[#0A192F] border-slate-700"
-            }`}
-          >
-            <span className="text-base">
-              {toast.type === "success" && "✅"}
-              {toast.type === "error" && "⚠️"}
-              {toast.type === "info" && "🗑️"}
-            </span>
-            <span className="flex-1">{toast.message}</span>
-          </div>
+            message={toast.message}
+            type={toast.type === "info" ? "info" : toast.type}
+            isVisible={true}
+            onClose={() => setToasts((prev) => prev.filter((t) => t.id !== toast.id))}
+            className="relative pointer-events-auto"
+          />
         ))}
       </div>
 
