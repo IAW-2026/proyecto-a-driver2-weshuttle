@@ -376,3 +376,60 @@ export async function getPassengerRatings(poolId: string) {
     return { pool_id: poolId, ratings: [] };
   }
 }
+
+/**
+ * Consulta si un conductor tiene configurado y activo un método de liquidación en la Payments App.
+ */
+export async function checkDriverPayoutAccount(driverUserId: string): Promise<{ success: boolean; hasPayoutAccount: boolean; error?: string }> {
+  const isMockMode = !process.env.PAYMENTS_API_URL;
+
+  if (isMockMode) {
+    console.log(`[Payments Mock Check Payout] Verificando cuenta de cobro para conductor ${driverUserId}.`);
+    // En modo mock, asumimos que el conductor "user_driver_sin_cuenta" no tiene cuenta, y los demás sí.
+    const hasAccount = driverUserId !== "user_driver_sin_cuenta" && !driverUserId.includes("sin_cuenta");
+    return {
+      success: true,
+      hasPayoutAccount: hasAccount
+    };
+  }
+
+  const baseUrl = getBaseUrl('PAYMENTS_API_URL');
+  const apiPath = `/api/payments/drivers/${driverUserId}/payout-account`;
+
+  try {
+    const response = await fetch(`${baseUrl}${apiPath}`, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+    });
+
+    const contentType = response.headers.get("content-type");
+    let responseData;
+    if (contentType && contentType.includes("application/json")) {
+      responseData = await response.json();
+    } else {
+      responseData = { message: await response.text() };
+    }
+
+    if (!response.ok) {
+      console.error(`[Payments API Check Payout Error] Status: ${response.status}. URL: ${baseUrl}${apiPath}. Payload:`, responseData);
+      return {
+        success: false,
+        hasPayoutAccount: false,
+        error: responseData?.error || responseData?.message || `Error HTTP ${response.status}`
+      };
+    }
+
+    console.log(`[Payments API Check Payout Success] URL: ${baseUrl}${apiPath}. Payload:`, responseData);
+    return {
+      success: true,
+      hasPayoutAccount: responseData?.has_payout_account === true
+    };
+  } catch (error) {
+    console.error(`[Payments API Check Payout Exception] URL: ${baseUrl}${apiPath}. Error:`, error);
+    return {
+      success: false,
+      hasPayoutAccount: false,
+      error: error instanceof Error ? error.message : "Error de conexión o de red con la app de Payments"
+    };
+  }
+}

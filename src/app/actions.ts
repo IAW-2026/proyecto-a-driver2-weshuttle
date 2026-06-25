@@ -3,7 +3,7 @@
 import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { auth } from "@clerk/nextjs/server";
-import { triggerCreditAdjustments, getPoolPassengers, precreateReviews, settlePoolFunds, cancelPoolOnRiderApp } from "../../externalApis";
+import { triggerCreditAdjustments, getPoolPassengers, precreateReviews, settlePoolFunds, cancelPoolOnRiderApp, checkDriverPayoutAccount } from "../../externalApis";
 import { z } from "zod";
 import { getClerkUserEmail } from "@/lib/clerk-utils";
 
@@ -207,6 +207,15 @@ export async function acceptPool(formData: FormData) {
       return { error: "Cuenta no verificada por el administrador." };
     }
 
+    // Verificar que el conductor tenga cargada una cuenta de cobro en Payments App
+    const payoutCheck = await checkDriverPayoutAccount(userId);
+    if (!payoutCheck.success) {
+      return { error: `No se pudo verificar tu cuenta de cobro con la Payments App: ${payoutCheck.error || "Error de conexión"}. Inténtalo de nuevo.` };
+    }
+    if (!payoutCheck.hasPayoutAccount) {
+      return { error: "No puedes aceptar viajes porque no tienes configurada una cuenta de cobro en la Payments App. Por favor, ingresa a la app de pagos y registra tu método de liquidación antes de tomar un viaje." };
+    }
+
     await prisma.pool.update({
       where: { id: poolId },
       data: { status: "ASSIGNED", driver_id: driver.id, vehicle_id: vehicleId }
@@ -214,7 +223,8 @@ export async function acceptPool(formData: FormData) {
 
     revalidatePath('/driver/marketplace');
     return { success: true };
-  } catch {
+  } catch (error) {
+    console.error("Error al asignar viaje:", error);
     return { error: "Error al asignar viaje." };
   }
 }
@@ -437,6 +447,13 @@ export async function completeTrip(formData: FormData) {
         return { success: true };
       }
 
+      let errorMessage = settleResult.error || "Error desconocido";
+      if (settleResult.error === "PAYOUT_ACCOUNT_NOT_FOUND" || JSON.stringify(settleResult.data).includes("PAYOUT_ACCOUNT_NOT_FOUND")) {
+        errorMessage = "No tienes configurada una cuenta de cobro en la Payments App. Por favor, ingresa a la Payments App y registra un método de liquidación (cuenta de cobro) para poder recibir los fondos del viaje.";
+      } else {
+        errorMessage = `No se pudo notificar la finalización del viaje a la app de pagos: ${errorMessage}`;
+      }
+
       // Si es otro tipo de error, revertimos el estado del pool en la BD de la Driver App
       console.warn(`[completeTrip] Liquidación falló. Revertiendo estado del viaje a ${originalStatus}`);
       await prisma.pool.update({
@@ -448,7 +465,7 @@ export async function completeTrip(formData: FormData) {
         },
       });
 
-      return { error: `No se pudo notificar la finalización del viaje a la app de pagos: ${settleResult.error || "Error desconocido"}` };
+      return { error: errorMessage };
     }
     
     revalidatePath(`/driver/pools/${poolId}/active`);
