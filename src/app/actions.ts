@@ -394,15 +394,62 @@ export async function completeTrip(formData: FormData) {
     const poolId = formData.get("poolId") as string;
     const { userId } = await auth();
 
-    if (userId) {
-      // Liquidar fondos al conductor en Payments App
-      await settlePoolFunds(poolId, userId, new Date().toISOString());
+    // Buscar el pool y el conductor en la base de datos para obtener el clerk_user_id
+    const pool = await prisma.pool.findUnique({
+      where: { id: poolId },
+      include: { driver: true }
+    });
+
+    if (!pool) {
+      return { error: "El viaje no existe." };
     }
 
+    const driverUserId = pool.driver?.clerk_user_id || userId || "user_driver_01";
+    const originalStatus = pool.status;
+
+    // 1. Actualizar el estado del pool a COMPLETED primero para que la Payments App
+    // pueda validar correctamente el estado al verificar el viaje.
     await prisma.pool.update({
       where: { id: poolId },
       data: { status: "COMPLETED", target_user_id: null, hito: null },
     });
+
+    console.log(`[completeTrip] Iniciando liquidación para el pool ${poolId} con driverUserId ${driverUserId}`);
+    // 2. Liquidar fondos al conductor en Payments App
+    const settleResult = await settlePoolFunds(poolId, driverUserId, new Date().toISOString());
+    console.log(`[completeTrip] Resultado de settlePoolFunds para pool ${poolId}:`, JSON.stringify(settleResult));
+
+    // 3. Validar el resultado de la liquidación
+    if (!settleResult.success) {
+      // Si recibimos un 409 Conflict, puede ser porque la liquidación ya se realizó previamente.
+      // En ese caso no debemos revertir ni fallar el flujo.
+      const isAlreadySettled = 
+        settleResult.status === 409 && 
+        (settleResult.error?.toLowerCase().includes("liquidación ya fue realizada") || 
+         settleResult.error?.toLowerCase().includes("already") ||
+         JSON.stringify(settleResult.data).toLowerCase().includes("already") ||
+         JSON.stringify(settleResult.data).toLowerCase().includes("conflict") ||
+         JSON.stringify(settleResult.data).toLowerCase().includes("realizada"));
+
+      if (isAlreadySettled) {
+        console.log(`[completeTrip] Settle retornó 409 pero la liquidación ya estaba realizada. Confirmando finalización.`);
+        revalidatePath(`/driver/pools/${poolId}/active`);
+        return { success: true };
+      }
+
+      // Si es otro tipo de error, revertimos el estado del pool en la BD de la Driver App
+      console.warn(`[completeTrip] Liquidación falló. Revertiendo estado del viaje a ${originalStatus}`);
+      await prisma.pool.update({
+        where: { id: poolId },
+        data: { 
+          status: originalStatus, 
+          target_user_id: pool.target_user_id, 
+          hito: pool.hito 
+        },
+      });
+
+      return { error: `No se pudo notificar la finalización del viaje a la app de pagos: ${settleResult.error || "Error desconocido"}` };
+    }
     
     revalidatePath(`/driver/pools/${poolId}/active`);
     return { success: true };
@@ -428,7 +475,23 @@ export async function autoLockPool(poolId: string) {
   */
 
   // 1. Llamar a Payments App para iniciar el cálculo de ajustes de crédito (credit-adjustments)
-  await triggerCreditAdjustments(poolId, "POOL_LOCKED", pool.departure_time.toISOString(), pool.current_passengers);
+  const adjustResult = await triggerCreditAdjustments(poolId, "POOL_LOCKED", pool.departure_time.toISOString(), pool.current_passengers);
+  
+  if (!adjustResult.success) {
+    // Si es 409 Conflict, significa que ya fueron procesados previamente. Lo toleramos (idempotencia).
+    const isAlreadyProcessed = 
+      adjustResult.status === 409 &&
+      (adjustResult.error?.toLowerCase().includes("ya fueron procesados") ||
+       adjustResult.error?.toLowerCase().includes("already") ||
+       JSON.stringify(adjustResult.data).toLowerCase().includes("already") ||
+       JSON.stringify(adjustResult.data).toLowerCase().includes("conflict") ||
+       JSON.stringify(adjustResult.data).toLowerCase().includes("procesados"));
+
+    if (!isAlreadyProcessed) {
+      throw new Error(`No se pudieron calcular los ajustes de crédito en la Payments App: ${adjustResult.error || "Error desconocido"}`);
+    }
+    console.log(`[autoLockPool] Los ajustes de crédito para el pool ${poolId} ya habían sido procesados (409 Conflict). Continuando.`);
+  }
 
   // 2. Obtener el manifiesto final de pasajeros pagados (PAID) desde la Rider App
   const manifestResponse = await getPoolPassengers(poolId, "PAID");
@@ -478,7 +541,7 @@ export async function lockPool(formData: FormData) {
     return { success: true };
   } catch (error) {
     console.error("Error al cerrar el pool (LOCKED):", error);
-    return { error: "Error interno al cerrar el pool y procesar cobros." };
+    return { error: error instanceof Error ? error.message : "Error interno al cerrar el pool y procesar cobros." };
   }
 }
 
@@ -609,12 +672,16 @@ export async function checkAndCancelExpiredPools() {
       );
 
       // Notificar a la Payments App
-      await triggerCreditAdjustments(
+      const adjustResult = await triggerCreditAdjustments(
         pool.id,
         "NO_DRIVER_ASSIGNED",
         pool.departure_time.toISOString(),
         pool.current_passengers
       );
+
+      if (!adjustResult.success) {
+        console.error(`[checkAndCancelExpiredPools] Falló al calcular ajustes de crédito para pool cancelado ${pool.id}:`, adjustResult.error);
+      }
     }
   } catch (error) {
     console.error("Error al procesar cancelación automática de pools vencidos:", error);

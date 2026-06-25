@@ -173,18 +173,22 @@ export async function triggerCreditAdjustments(
   reason: "POOL_LOCKED" | "NO_DRIVER_ASSIGNED",
   departureTime: string,
   currentPassengers: number
-) {
+): Promise<{ success: boolean; status?: number; error?: string; data?: any }> {
   const isMockMode = !process.env.PAYMENTS_API_URL;
 
   if (isMockMode) {
     console.log(`[Payments Mock Credit Adjustments] Calculando ajustes para Pool ${poolId} con motivo ${reason} y ${currentPassengers} pasajeros.`);
     return {
-      pool_id: poolId,
-      reason,
-      final_price: reason === "NO_DRIVER_ASSIGNED" ? 0 : 3800,
-      processed_reservations: currentPassengers,
-      currency: "ARS",
-      credits_generated: []
+      success: true,
+      status: 200,
+      data: {
+        pool_id: poolId,
+        reason,
+        final_price: reason === "NO_DRIVER_ASSIGNED" ? 0 : 3800,
+        processed_reservations: currentPassengers,
+        currency: "ARS",
+        credits_generated: []
+      }
     };
   }
 
@@ -202,28 +206,60 @@ export async function triggerCreditAdjustments(
       }),
     });
 
-    return await response.json();
+    const contentType = response.headers.get("content-type");
+    let responseData;
+    if (contentType && contentType.includes("application/json")) {
+      responseData = await response.json();
+    } else {
+      responseData = { message: await response.text() };
+    }
+
+    if (!response.ok) {
+      console.error(`[Payments API Error] Status: ${response.status}. URL: ${baseUrl}${apiPath}. Payload:`, responseData);
+      return {
+        success: false,
+        status: response.status,
+        error: responseData?.error || responseData?.message || `Error HTTP ${response.status}`,
+        data: responseData
+      };
+    }
+
+    console.log(`[Payments API Success] Status: ${response.status}. URL: ${baseUrl}${apiPath}. Payload:`, responseData);
+    return {
+      success: true,
+      status: response.status,
+      data: responseData
+    };
   } catch (error) {
-    console.error(`[Payments API] Error al iniciar ajustes de crédito para pool ${poolId}:`, error);
-    return null;
+    console.error(`[Payments API Request Exception] URL: ${baseUrl}${apiPath}. Error:`, error);
+    return {
+      success: false,
+      status: 500,
+      error: error instanceof Error ? error.message : "Error de conexión o de red con la app de Payments",
+      data: null
+    };
   }
 }
 
 /**
  * Solicita la liquidación de fondos al conductor en Payments App.
  */
-export async function settlePoolFunds(poolId: string, driverUserId: string, completedAt: string) {
+export async function settlePoolFunds(poolId: string, driverUserId: string, completedAt: string): Promise<{ success: boolean; status?: number; error?: string; data?: any }> {
   const isMockMode = !process.env.PAYMENTS_API_URL;
 
   if (isMockMode) {
     console.log(`[Payments Mock Settle] Liquidando fondos para Pool ${poolId} de Conductor ${driverUserId} completado a las ${completedAt}.`);
     return {
-      settlement_id: `settlement_mock_${poolId}`,
-      settlement_status: "COMPLETED",
-      pool_id: poolId,
-      driver_user_id: driverUserId,
-      amount_settled: 45000,
-      completed_at: completedAt
+      success: true,
+      status: 200,
+      data: {
+        settlement_id: `settlement_mock_${poolId}`,
+        settlement_status: "COMPLETED",
+        pool_id: poolId,
+        driver_user_id: driverUserId,
+        amount_settled: 45000,
+        completed_at: completedAt
+      }
     };
   }
 
@@ -240,10 +276,38 @@ export async function settlePoolFunds(poolId: string, driverUserId: string, comp
       }),
     });
 
-    return await response.json();
+    const contentType = response.headers.get("content-type");
+    let responseData;
+    if (contentType && contentType.includes("application/json")) {
+      responseData = await response.json();
+    } else {
+      responseData = { message: await response.text() };
+    }
+
+    if (!response.ok) {
+      console.error(`[Payments API Error] Status: ${response.status}. URL: ${baseUrl}${apiPath}. Payload:`, responseData);
+      return {
+        success: false,
+        status: response.status,
+        error: responseData?.error || responseData?.message || `Error HTTP ${response.status}`,
+        data: responseData
+      };
+    }
+
+    console.log(`[Payments API Success] Status: ${response.status}. URL: ${baseUrl}${apiPath}. Payload:`, responseData);
+    return {
+      success: true,
+      status: response.status,
+      data: responseData
+    };
   } catch (error) {
-    console.error(`[Payments API] Error al liquidar fondos para pool ${poolId}:`, error);
-    return null;
+    console.error(`[Payments API Request Exception] URL: ${baseUrl}${apiPath}. Error:`, error);
+    return {
+      success: false,
+      status: 500,
+      error: error instanceof Error ? error.message : "Error de conexión o de red con la app de Payments",
+      data: null
+    };
   }
 }
 
