@@ -14,6 +14,8 @@ interface Passenger {
   passenger_status: string;
   rating?: number | null;
   total_reviews?: number;
+  pickup_lat?: number;
+  pickup_lng?: number;
 }
 
 interface Pool {
@@ -40,6 +42,12 @@ export default function ActiveTripClient({ pool, currentTargetPassenger }: Props
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [showMap, setShowMap] = useState(false);
+  const [expandedPassengerId, setExpandedPassengerId] = useState<string | null>(null);
+
+  const togglePassengerMap = (passengerId: string) => {
+    setExpandedPassengerId((prev) => (prev === passengerId ? null : passengerId));
+  };
 
   // Periodic background refresh for real-time updates (passenger status/manifest updates)
   useEffect(() => {
@@ -306,6 +314,52 @@ export default function ActiveTripClient({ pool, currentTargetPassenger }: Props
                 </div>
                 &quot;{pool.hito}&quot;
               </div>
+
+              {/* 🗺️ MAPA DE RETIRO CON OPENSTREETMAP */}
+              {currentTargetPassenger.pickup_lat !== undefined && currentTargetPassenger.pickup_lng !== undefined && (
+                <div className="pt-2 border-t border-[#D8DADC]/60">
+                  <button
+                    type="button"
+                    onClick={() => setShowMap(!showMap)}
+                    className="w-full text-xs border border-[#D8DADC] text-[#0A192F] hover:bg-slate-50 font-bold py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-sm">{showMap ? "close" : "map"}</span>
+                    {showMap ? "Ocultar Mapa de Retiro" : "Mostrar Mapa de Retiro"}
+                  </button>
+
+                  {showMap && (
+                    <div className="mt-3 overflow-hidden rounded-xl border border-[#D8DADC] shadow-sm animate-scale-in">
+                      <iframe
+                        width="100%"
+                        height="250"
+                        style={{ border: 0 }}
+                        src={`https://www.openstreetmap.org/export/embed.html?bbox=${currentTargetPassenger.pickup_lng - 0.003}%2C${currentTargetPassenger.pickup_lat - 0.002}%2C${currentTargetPassenger.pickup_lng + 0.003}%2C${currentTargetPassenger.pickup_lat + 0.002}&layer=mapnik&marker=${currentTargetPassenger.pickup_lat}%2C${currentTargetPassenger.pickup_lng}`}
+                      />
+                      <div className="bg-slate-50 p-2 text-center border-t border-[#D8DADC] flex justify-center gap-4 text-xs font-semibold">
+                        <a
+                          href={`https://www.openstreetmap.org/?mlat=${currentTargetPassenger.pickup_lat}&mlon=${currentTargetPassenger.pickup_lng}#map=16/${currentTargetPassenger.pickup_lat}/${currentTargetPassenger.pickup_lng}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[#0A192F] hover:underline flex items-center gap-1"
+                        >
+                          <span className="material-symbols-outlined text-sm">open_in_new</span>
+                          Ver en OpenStreetMap
+                        </a>
+                        <span className="text-[#D8DADC]">|</span>
+                        <a
+                          href={`https://www.google.com/maps/search/?api=1&query=${currentTargetPassenger.pickup_lat},${currentTargetPassenger.pickup_lng}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-indigo-600 hover:underline flex items-center gap-1"
+                        >
+                          <span className="material-symbols-outlined text-sm">navigation</span>
+                          Navegar con Google Maps
+                        </a>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         ) : pool.status === "IN_PROGRESS" ? (
@@ -362,49 +416,99 @@ export default function ActiveTripClient({ pool, currentTargetPassenger }: Props
               pool.manifest_passengers.map((p, index) => {
                 const isTarget = pool.target_user_id === p.passenger_user_id;
                 const isPickedUp = p.passenger_status === "COMPLETED" || pool.status === "COMPLETED";
+                const isMapExpanded = expandedPassengerId === p.id;
 
                 return (
-                  <div key={p.id} className={`p-4 flex items-center justify-between text-xs transition-colors ${isTarget ? 'bg-[#EFF6FF]/30 font-medium' : ''}`}>
-                    <div className="flex items-center gap-3">
-                      <span className={`w-6 h-6 rounded-full flex items-center justify-center font-mono text-xs font-bold border transition-colors shrink-0 ${
-                        isPickedUp ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
-                        isTarget ? 'bg-[#0A192F] text-white border-[#0A192F]' : 'bg-slate-100 text-slate-400 border-slate-200'
-                      }`}>
-                        {isPickedUp ? (
-                          <span className="material-symbols-outlined text-sm font-bold">check</span>
-                        ) : index + 1}
-                      </span>
-                      <div>
-                        <p className={`${isPickedUp ? "line-through text-slate-400" : "text-slate-800 font-semibold"} flex items-center gap-1.5`}>
-                          {p.passenger_name}
-                          {p.rating !== undefined && p.rating !== null ? (
-                            <span className="text-[9px] bg-amber-50 text-amber-700 border border-amber-200 px-1 py-0.2 rounded-md font-extrabold flex items-center gap-0.5 shadow-sm">
-                              ★ {p.rating.toFixed(1)}
-                              {p.total_reviews !== undefined && p.total_reviews > 0 && (
-                                <span className="text-slate-400 font-normal">({p.total_reviews})</span>
-                              )}
+                  <div key={p.id} className={`p-4 flex flex-col gap-2 text-xs transition-colors ${isTarget ? 'bg-[#EFF6FF]/30 font-medium' : ''}`}>
+                    <div className="flex items-center justify-between w-full">
+                      <div className="flex items-center gap-3">
+                        <span className={`w-6 h-6 rounded-full flex items-center justify-center font-mono text-xs font-bold border transition-colors shrink-0 ${
+                          isPickedUp ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
+                          isTarget ? 'bg-[#0A192F] text-white border-[#0A192F]' : 'bg-slate-100 text-slate-400 border-slate-200'
+                        }`}>
+                          {isPickedUp ? (
+                            <span className="material-symbols-outlined text-sm font-bold">check</span>
+                          ) : index + 1}
+                        </span>
+                        <div>
+                          <p className={`${isPickedUp ? "line-through text-slate-400" : "text-slate-800 font-semibold"} flex items-center gap-1.5`}>
+                            {p.passenger_name}
+                            {p.rating !== undefined && p.rating !== null ? (
+                              <span className="text-[9px] bg-amber-50 text-amber-700 border border-amber-200 px-1 py-0.2 rounded-md font-extrabold flex items-center gap-0.5 shadow-sm">
+                                ★ {p.rating.toFixed(1)}
+                                {p.total_reviews !== undefined && p.total_reviews > 0 && (
+                                  <span className="text-slate-400 font-normal">({p.total_reviews})</span>
+                                )}
+                              </span>
+                            ) : (
+                              <span className="text-[9px] bg-slate-100 text-slate-500 border border-slate-200 px-1 py-0.2 rounded-md font-extrabold flex items-center gap-0.5 shadow-sm">
+                                ★ --
+                              </span>
+                            )}
+                          </p>
+                          <div className="text-[10px] text-slate-400 mt-0.5 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
+                            <span className="flex items-center gap-1">
+                              <span className="material-symbols-outlined text-xs">pin_drop</span>
+                              {p.pickup_address}
                             </span>
-                          ) : (
-                            <span className="text-[9px] bg-slate-100 text-slate-500 border border-slate-200 px-1 py-0.2 rounded-md font-extrabold flex items-center gap-0.5 shadow-sm">
-                              ★ --
-                            </span>
-                          )}
-                        </p>
-                        <p className="text-[10px] text-slate-400 mt-0.5 flex items-center gap-1">
-                          <span className="material-symbols-outlined text-xs">pin_drop</span>
-                          {p.pickup_address}
-                        </p>
+                            {p.pickup_lat !== undefined && p.pickup_lng !== undefined && (
+                              <button
+                                type="button"
+                                onClick={() => togglePassengerMap(p.id)}
+                                className="text-[9px] text-[#0A192F] hover:text-[#111827] font-extrabold flex items-center gap-0.5 hover:underline cursor-pointer"
+                              >
+                                <span className="material-symbols-outlined text-xs">map</span>
+                                {isMapExpanded ? "Ocultar mapa" : "Ver mapa"}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        {isTarget && (
+                          <span className="text-[9px] bg-[#0A192F] text-white px-2.5 py-1 rounded-md uppercase font-bold tracking-tight shadow-sm">
+                            Actual
+                          </span>
+                        )}
+                        {isPickedUp && (
+                          <span className="inline-flex items-center gap-0.5 text-[9px] bg-emerald-50 text-emerald-700 border border-emerald-100 px-2 py-0.5 rounded-full font-bold">
+                            A bordo
+                          </span>
+                        )}
                       </div>
                     </div>
-                    {isTarget && (
-                      <span className="text-[9px] bg-[#0A192F] text-white px-2.5 py-1 rounded-md uppercase font-bold tracking-tight shadow-sm">
-                        Actual
-                      </span>
-                    )}
-                    {isPickedUp && (
-                      <span className="inline-flex items-center gap-0.5 text-[9px] bg-emerald-50 text-emerald-700 border border-emerald-100 px-2 py-0.5 rounded-full font-bold">
-                        A bordo
-                      </span>
+
+                    {/* 🗺️ MAPA DE CADA PASAJERO DESPLEGABLE */}
+                    {isMapExpanded && p.pickup_lat !== undefined && p.pickup_lng !== undefined && (
+                      <div className="w-full border border-[#D8DADC] rounded-xl overflow-hidden shadow-sm animate-scale-in">
+                        <iframe
+                          width="100%"
+                          height="200"
+                          style={{ border: 0 }}
+                          src={`https://www.openstreetmap.org/export/embed.html?bbox=${p.pickup_lng - 0.003}%2C${p.pickup_lat - 0.002}%2C${p.pickup_lng + 0.003}%2C${p.pickup_lat + 0.002}&layer=mapnik&marker=${p.pickup_lat}%2C${p.pickup_lng}`}
+                        />
+                        <div className="bg-slate-50 p-1.5 text-center border-t border-[#D8DADC] flex justify-center gap-4 text-[9px] font-semibold">
+                          <a
+                            href={`https://www.openstreetmap.org/?mlat=${p.pickup_lat}&mlon=${p.pickup_lng}#map=16/${p.pickup_lat}/${p.pickup_lng}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[#0A192F] hover:underline flex items-center gap-0.5"
+                          >
+                            <span className="material-symbols-outlined text-xs">open_in_new</span>
+                            Ver en OSM
+                          </a>
+                          <span className="text-[#D8DADC]">|</span>
+                          <a
+                            href={`https://www.google.com/maps/search/?api=1&query=${p.pickup_lat},${p.pickup_lng}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-indigo-600 hover:underline flex items-center gap-0.5"
+                          >
+                            <span className="material-symbols-outlined text-xs">navigation</span>
+                            Ver en Google Maps
+                          </a>
+                        </div>
+                      </div>
                     )}
                   </div>
                 );
