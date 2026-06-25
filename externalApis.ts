@@ -46,6 +46,17 @@ function getBaseUrl(envVar: string): string {
   return process.env[envVar] || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 }
 
+function getAuthHeaders(extraHeaders?: Record<string, string>): Record<string, string> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...extraHeaders,
+  };
+  if (process.env.WESHUTTLE_INTERNAL_KEY) {
+    headers['Authorization'] = `Bearer ${process.env.WESHUTTLE_INTERNAL_KEY}`;
+  }
+  return headers;
+}
+
 /**
  * Obtiene la lista de pasajeros asociados a un pool.
  */
@@ -108,9 +119,7 @@ export async function getPoolPassengers(poolId: string, status?: string): Promis
   try {
     const response = await fetch(url.toString(), {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: getAuthHeaders(),
     });
 
     if (!response.ok) {
@@ -145,9 +154,7 @@ export async function cancelPoolOnRiderApp(poolId: string, reason: string, messa
   try {
     const response = await fetch(`${baseUrl}${apiPath}`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify({ reason, message }),
     });
 
@@ -187,9 +194,7 @@ export async function triggerCreditAdjustments(
   try {
     const response = await fetch(`${baseUrl}${apiPath}`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify({
         reason,
         departure_time: departureTime,
@@ -228,9 +233,7 @@ export async function settlePoolFunds(poolId: string, driverUserId: string, comp
   try {
     const response = await fetch(`${baseUrl}${apiPath}`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify({
         driver_user_id: driverUserId,
         completed_at: completedAt
@@ -265,9 +268,7 @@ export async function precreateReviews(poolId: string, driverUserId: string, sta
   try {
     const response = await fetch(`${baseUrl}${apiPath}`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify({
         pool_id: poolId,
         driver_user_id: driverUserId,
@@ -302,9 +303,7 @@ export async function getPassengerRatings(poolId: string) {
   try {
     const response = await fetch(`${baseUrl}${apiPath}`, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: getAuthHeaders(),
     });
 
     return await response.json();

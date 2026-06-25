@@ -64,7 +64,7 @@ export default function ActiveTripClient({ pool, currentTargetPassenger }: Props
       const result = await startJourneyFromList(formData);
       if (result?.error) {
         addToast(result.error, "error");
-      } else if (result?.success) {
+      } else if (result && 'success' in result) {
         addToast("Viaje iniciado exitosamente", "success");
         router.refresh();
       }
