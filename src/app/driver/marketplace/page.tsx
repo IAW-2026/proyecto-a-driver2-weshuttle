@@ -118,12 +118,15 @@ export default async function MarketplacePage({
     })),
   };
 
+  const paymentsAppUrl = process.env.NEXT_PUBLIC_PAYMENTS_APP_URL || "https://proyecto-a-payments-weshuttle.vercel.app";
+
   return (
     <MarketplaceClient
       pools={serializedPools}
       currentDriver={serializedDriver}
       validPage={validPage}
       totalPages={totalPages}
+      paymentsAppUrl={paymentsAppUrl}
     />
   );
 }

@@ -49,6 +49,7 @@ interface Props {
   currentDriver: Driver | null;
   validPage: number;
   totalPages: number;
+  paymentsAppUrl: string;
 }
 
 export default function MarketplaceClient({
@@ -56,11 +57,13 @@ export default function MarketplaceClient({
   currentDriver,
   validPage,
   totalPages,
+  paymentsAppUrl,
 }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [expandedPools, setExpandedPools] = useState<Set<string>>(new Set());
+  const [showPayoutModal, setShowPayoutModal] = useState(false);
 
   // Periodic background refresh for real-time updates (creations, joins, cancellations)
   useEffect(() => {
@@ -97,7 +100,12 @@ export default function MarketplaceClient({
     startTransition(async () => {
       const result = await acceptPool(formData);
       if (result?.error) {
-        addToast(result.error, "error");
+        if (result.error.includes("cuenta de cobro") || result.error.includes("liquidación")) {
+          setShowPayoutModal(true);
+          addToast("Necesitas agregar un método de liquidación", "error");
+        } else {
+          addToast(result.error, "error");
+        }
       } else if (result?.success) {
         addToast("Viaje tomado exitosamente", "success");
         // Refrescar para remover el viaje tomado de la lista
@@ -308,6 +316,42 @@ export default function MarketplaceClient({
           />
         ))}
       </div>
+
+      {/* MODAL MÉTODO DE LIQUIDACIÓN */}
+      {showPayoutModal && (
+        <div className="fixed inset-0 z-[150] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-scale-in">
+          <div className="bg-white rounded-2xl border border-slate-200 p-6 max-w-md w-full shadow-2xl animate-scale-in flex flex-col gap-4 text-center">
+            <div className="w-14 h-14 rounded-full bg-amber-50 text-amber-500 border border-amber-200 flex items-center justify-center mx-auto mb-2">
+              <span className="material-symbols-outlined text-3xl font-bold">payments</span>
+            </div>
+            
+            <h3 className="text-xl font-extrabold text-[#0A192F]">Método de Liquidación Requerido</h3>
+            
+            <p className="text-sm text-slate-600 leading-relaxed">
+              No tienes configurada una cuenta de cobro en la **Payments App**. Para poder tomar viajes y recibir tus ingresos, debes registrar un método de liquidación.
+            </p>
+            
+            <div className="flex flex-col sm:flex-row gap-3 mt-4 w-full">
+              <button
+                type="button"
+                onClick={() => setShowPayoutModal(false)}
+                className="flex-1 px-4 py-2.5 border border-[#D8DADC] rounded-xl hover:bg-slate-50 font-bold text-xs transition-all text-slate-700 cursor-pointer text-center"
+              >
+                Entendido
+              </button>
+              <a
+                href={paymentsAppUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 px-4 py-2.5 bg-[#10B981] hover:bg-[#059669] text-white rounded-xl text-xs font-bold text-center transition-all shadow-sm flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-sm">open_in_new</span>
+                Configurar Cuenta
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
