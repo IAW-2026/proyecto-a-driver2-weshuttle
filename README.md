@@ -41,6 +41,15 @@ Para evaluar los flujos de uso completos y la segmentación de pantallas por rol
 
 La **Driver App** constituye el núcleo operativo de la plataforma, encargándose de toda la logística de transporte desde la perspectiva del chofer y la auditoría del administrador. Permite la publicación de viajes en un marketplace transparente, la gestión granular y resiliente del recorrido del chofer minuto a minuto, el control de la flota de vehículos aptos y la analítica de negocio centralizada.
 
+### 🌐 Conexión con Analytics Dashboard
+Como parte de la evolución del ecosistema, la Driver App expone un endpoint seguro (`/api/analytics/metrics`) diseñado para ser consumido por el **Analytics Dashboard**. Este endpoint provee:
+*   Métricas de rendimiento financiero (Revenue, ARPU, etc.).
+*   Tasa de ocupación y utilización de conductores.
+*   Distribución y tendencias de volumen de pools (viajes) semanales y horarios.
+*   Rankings y alertas de calidad y riesgo de conductores.
+
+Para fines de desarrollo y demostración de las capacidades analíticas, el sistema cuenta con un seed masivo (`seed-manifest.json`) que inyecta en la base de datos **+2500 registros** interconectados de viajes, pasajeros y cobros, simulando un entorno de alta demanda.
+
 ---
 
 ## 5. Notas Aclaratorias para la Corrección
