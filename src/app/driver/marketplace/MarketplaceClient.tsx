@@ -50,6 +50,7 @@ interface Props {
   validPage: number;
   totalPages: number;
   paymentsAppUrl: string;
+  isAdmin?: boolean;
 }
 
 export default function MarketplaceClient({
@@ -58,6 +59,7 @@ export default function MarketplaceClient({
   validPage,
   totalPages,
   paymentsAppUrl,
+  isAdmin = false,
 }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -201,7 +203,12 @@ export default function MarketplaceClient({
                     </div>
 
                     <div className="w-full md:w-auto flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                      {(!currentDriver || currentDriver.verification_status !== "APPROVED") ? (
+                      {isAdmin ? (
+                        <span className="text-xs text-blue-700 bg-blue-50 border border-blue-200 px-3.5 py-2.5 rounded-lg text-center font-bold shadow-sm flex items-center gap-1">
+                          <span className="material-symbols-outlined text-sm">visibility</span>
+                          Modo de visualización (Admin)
+                        </span>
+                      ) : (!currentDriver || currentDriver.verification_status !== "APPROVED") ? (
                         <span className="text-xs text-[#B45309] bg-[#FFFBEB] border border-[#F59E0B]/20 px-3.5 py-2.5 rounded-lg text-center font-bold shadow-sm flex items-center gap-1">
                           <span className="material-symbols-outlined text-sm">lock</span>
                           Requiere cuenta verificada por Admin

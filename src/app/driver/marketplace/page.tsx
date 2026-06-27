@@ -25,28 +25,48 @@ export default async function MarketplacePage({
   // 1. Recuperamos la sesión y los claims del usuario logueado en Clerk
   const { userId, sessionClaims } = await auth();
   
-  if (!userId || sessionClaims?.role !== "driver") {
+  const role = sessionClaims?.role;
+  const isDriver = role === "driver";
+  const isAdmin = role === "admin";
+
+  if (!userId || (!isDriver && !isAdmin)) {
     redirect("/");
   }
 
-  const email = await getClerkUserEmail();
+  let serializedDriver = null;
 
-  // 2. 🚀 AUTO-REGISTRO EN PRIMER LOGIN
-  const currentDriver = await prisma.driver.upsert({
-    where: { clerk_user_id: userId },
-    update: {
-      email: email || undefined
-    },
-    create: {
-      clerk_user_id: userId,
-      email: email || "",
-      full_name: (sessionClaims as { name?: string })?.name || "Conductor Nuevo",
-      phone: "",
-      status: "ACTIVE",
-      verification_status: "PENDING",
-    },
-    include: { vehicles: { where: { status: "ACTIVE" } } }
-  });
+  if (isDriver) {
+    const email = await getClerkUserEmail();
+
+    // 2. 🚀 AUTO-REGISTRO EN PRIMER LOGIN
+    const currentDriver = await prisma.driver.upsert({
+      where: { clerk_user_id: userId },
+      update: {
+        email: email || undefined
+      },
+      create: {
+        clerk_user_id: userId,
+        email: email || "",
+        full_name: (sessionClaims as { name?: string })?.name || "Conductor Nuevo",
+        phone: "",
+        status: "ACTIVE",
+        verification_status: "PENDING",
+      },
+      include: { vehicles: { where: { status: "ACTIVE" } } }
+    });
+
+    serializedDriver = {
+      id: currentDriver.id,
+      verification_status: currentDriver.verification_status,
+      vehicles: currentDriver.vehicles.map((v) => ({
+        id: v.id,
+        brand: v.brand,
+        model: v.model,
+        license_plate: v.license_plate,
+        capacity: v.capacity,
+      })),
+    };
+  }
 
   // Ejecutamos limpieza de pools vencidos sin conductor asignado
   await checkAndCancelExpiredPools();
@@ -106,17 +126,7 @@ export default async function MarketplacePage({
     })
   );
 
-  const serializedDriver = {
-    id: currentDriver.id,
-    verification_status: currentDriver.verification_status,
-    vehicles: currentDriver.vehicles.map((v) => ({
-      id: v.id,
-      brand: v.brand,
-      model: v.model,
-      license_plate: v.license_plate,
-      capacity: v.capacity,
-    })),
-  };
+
 
   const paymentsAppUrl = process.env.NEXT_PUBLIC_PAYMENTS_APP_URL || "https://proyecto-a-payments-weshuttle.vercel.app";
 
@@ -127,6 +137,7 @@ export default async function MarketplacePage({
       validPage={validPage}
       totalPages={totalPages}
       paymentsAppUrl={paymentsAppUrl}
+      isAdmin={isAdmin}
     />
   );
 }
