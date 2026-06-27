@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import prisma from "@/lib/prisma";
 import TopNavBar from "@/app/components/TopNavBar";
+import ExportHistoryButton from "./ExportHistoryButton";
 
 export const metadata = {
   title: "Historial de Viajes Global | WeShuttle Admin",
@@ -34,6 +35,17 @@ export default async function AdminHistoryPage() {
       departure_time: "desc",
     },
   });
+
+  const serializedPoolsForExport = pools.map((pool) => ({
+    id: pool.id,
+    departure_time: pool.departure_time.toISOString(),
+    destination_id: pool.destination_id,
+    status: pool.status,
+    current_passengers: pool.current_passengers,
+    max_capacity: pool.max_capacity,
+    driver_name: pool.driver?.full_name || "Sin Conductor",
+    vehicle_plate: pool.vehicle?.license_plate || "N/A",
+  }));
 
   return (
     <div className="min-h-screen bg-[#F7F9FB] font-sans text-slate-700">
@@ -69,6 +81,10 @@ export default async function AdminHistoryPage() {
               Historial Global
             </span>
           </div>
+        </div>
+
+        <div className="flex justify-end mb-4">
+          <ExportHistoryButton pools={serializedPoolsForExport} />
         </div>
 
         {/* Listado de Viajes */}

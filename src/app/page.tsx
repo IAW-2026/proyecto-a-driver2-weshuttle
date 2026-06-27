@@ -4,14 +4,15 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import prisma from "@/lib/prisma";
 import NotificationsDropdown from "@/app/components/NotificationsDropdown";
+import LandingPage from "@/app/components/LandingPage";
 
 export default async function HomePage() {
   // Recuperamos la sesión actual del usuario directamente en el servidor
   const { userId, sessionClaims } = await auth();
 
-  // Si no hay un usuario autenticado, lo redirigimos a iniciar sesión
+  // Si no hay un usuario autenticado, mostramos la página de bienvenida (Landing Page)
   if (!userId) {
-    redirect("/sign-in");
+    return <LandingPage />;
   }
 
   const feedbackAppUrl = process.env.NEXT_PUBLIC_FEEDBACK_APP_URL || "https://proyecto-a-feedback-weshuttle.vercel.app";
